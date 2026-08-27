@@ -3,7 +3,7 @@
 # Group2-Junior-Project
 Junior Project Team Work
 
-(our grouup name)
+(our group name)
 
 Group Leader:Deva Zukananda
 Member 1 : Ursula Maurentti Amarely
