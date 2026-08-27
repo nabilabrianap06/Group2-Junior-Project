@@ -3,7 +3,7 @@
 # Group2-Junior-Project
 Junior Project Team Work
 
-(our group name)
+Anti-CO2
 
 Group Leader:Deva Zukananda
 Member 1 : Ursula Maurentti Amarely
