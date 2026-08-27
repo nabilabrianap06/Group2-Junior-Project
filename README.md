@@ -1,4 +1,4 @@
-_app name)
+(app name)
 
 # Group2-Junior-Project
 Junior Project Team Work
