@@ -1,11 +1,10 @@
-(app name)
+# **OxyGenAI**
+## *Junior Project DTETI UGM: Group 2*
 
-# Group2-Junior-Project
-Junior Project Team Work
+### Project Description
+OxyGenAI is designed to track the environmental impact of generative AI usage. By analyzing token consumption and computational processes, the application estimates the corresponding carbon dioxide (CO2) emissions and water usage for each interaction.
 
-Anti-CO2
-
-Group Leader:Deva Zukananda
-Member 1 : Ursula Maurentti Amarely
-Member 2 : Satrio Suryo Anggoro Azis
-Member 3 : Nabil Abrian Aryo Prabowo - 24/546496/TK/60770
+- Group Leader: Deva Zukananda
+- Member 1 : Ursula Maurentti Amarely - 24/533008/TK/59050
+- Member 2 : Satrio Suryo Anggoro Azis
+- Member 3 : Nabil Abrian Aryo Prabowo - 24/546496/TK/60770
