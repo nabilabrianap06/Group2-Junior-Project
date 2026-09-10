@@ -68,4 +68,4 @@ AIEnvironmentalTracker.Web/
 
 ---
 ## Class Diagram
-!Complete Class Diagram(module3_classdiagram.png)
+![Class Diagram](module3_classdiagram.png)
