@@ -65,7 +65,9 @@ AIEnvironmentalTracker.Web/
 │   ├── ImpactCalculator.cs        # Environmental Estimation Logic
 │   └── UsageTrackingService.cs    # Data Persistence
 └── Program.cs           # Entry point & Dependency Injection
+```
 
 ---
+
 ## Class Diagram
 ![Class Diagram](module3_classdiagram.png)
