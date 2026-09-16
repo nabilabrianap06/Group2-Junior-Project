@@ -848,6 +848,16 @@
         "build": {
           "buildTransitive/net8.0/_._": {}
         }
+      },
+      "AIEnvironmentalTracker.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/AIEnvironmentalTracker.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/AIEnvironmentalTracker.Domain.dll": {}
+        }
       }
     }
   },
@@ -2522,10 +2532,16 @@
         "system.composition.typedparts.nuspec",
         "useSharedDesignerContext.txt"
       ]
+    },
+    "AIEnvironmentalTracker.Domain/1.0.0": {
+      "type": "project",
+      "path": "../AIEnvironmentalTracker.Domain/AIEnvironmentalTracker.Domain.csproj",
+      "msbuildProject": "../AIEnvironmentalTracker.Domain/AIEnvironmentalTracker.Domain.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "AIEnvironmentalTracker.Domain >= 1.0.0",
       "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.12",
       "Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore >= 10.0.12",
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore >= 10.0.12",
@@ -2567,7 +2583,11 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Users\\ASUS TUF\\Group2-Junior-Project\\src\\AIEnvironmentalTracker.Domain\\AIEnvironmentalTracker.Domain.csproj": {
+              "projectPath": "C:\\Users\\ASUS TUF\\Group2-Junior-Project\\src\\AIEnvironmentalTracker.Domain\\AIEnvironmentalTracker.Domain.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

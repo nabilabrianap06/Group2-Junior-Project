@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AIEnvironmentalTracker.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b3c3200464b90a67f28f154b1b0c281740c905a0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e80e76f579893a390942ae94409919411a35d166")]
 [assembly: System.Reflection.AssemblyProductAttribute("AIEnvironmentalTracker.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AIEnvironmentalTracker.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
