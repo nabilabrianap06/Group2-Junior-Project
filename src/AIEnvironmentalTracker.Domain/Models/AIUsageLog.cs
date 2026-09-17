@@ -2,34 +2,33 @@ namespace AIEnvironmentalTracker.Domain.Models;
 
 public class AIUsageLog
 {
+    // Attributes matching UML
     public int LogId { get; set; }
-
-    // User Navigation
-    public int UserId { get; set; }
-    public User? User { get; set; }
-
-    // Usage Data
     public string DetectedApp { get; set; } = string.Empty;
-    public double SessionDuration { get; set; } // Duration in minutes
+    public double SessionDuration { get; set; }
     public int QueryCount { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-    // Environmental Factor Foreign Key (Optional: tracks which baseline factors were applied)
-    public int? EnvironmentalFactorId { get; set; }
-    public EnvironmentalFactor? EnvironmentalFactor { get; set; }
+    // Foreign Key / Navigation back to RegisteredUser
+    public int RegisteredUserId { get; set; }
+    public RegisteredUser? RegisteredUser { get; set; }
 
-    // Domain Helper Methods
-    public double CalculateEstimatedEnergyKWh(double energyPerQueryKWh, double energyPerMinuteKWh)
+    // Operations matching UML
+    public void ScanDeviceActivity()
     {
-        return (QueryCount * energyPerQueryKWh) + (SessionDuration * energyPerMinuteKWh);
+        // Logic to monitor background running processes / AI applications
     }
 
-    public void UpdateSessionDetails(double addedDurationMinutes, int addedQueries)
+    public void CreateUsageLog()
     {
-        if (addedDurationMinutes < 0 || addedQueries < 0)
-            throw new ArgumentException("Added duration and query counts must be non-negative.");
+        // Persistence or factory initialization logic
+    }
 
-        SessionDuration += addedDurationMinutes;
-        QueryCount += addedQueries;
+    // Helper linking AIUsageLog to ImpactCalculator as shown by the dependency arrow
+    public ImpactCalculator CalculateImpact(EnvironmentalFactor factors)
+    {
+        var calculator = new ImpactCalculator();
+        calculator.ComputeImpact(this, factors);
+        return calculator;
     }
 }
