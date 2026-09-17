@@ -1,0 +1,12 @@
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\bin\Debug\net10.0\AIEnvironmentalTracker.Domain.deps.json
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\bin\Debug\net10.0\AIEnvironmentalTracker.Domain.dll
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\bin\Debug\net10.0\AIEnvironmentalTracker.Domain.pdb
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.AssemblyInfoInputs.cache
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.AssemblyInfo.cs
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.csproj.CoreCompileInputs.cache
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.sourcelink.json
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.dll
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\refint\AIEnvironmentalTracker.Domain.dll
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\AIEnvironmentalTracker.Domain.pdb
+C:\Users\ASUS TUF\Group2-Junior-Project\src\AIEnvironmentalTracker.Domain\obj\Debug\net10.0\ref\AIEnvironmentalTracker.Domain.dll

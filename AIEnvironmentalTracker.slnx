@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AIEnvironmentalTracker.Domain/AIEnvironmentalTracker.Domain.csproj" />
+    <Project Path="src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj" />
+  </Folder>
+</Solution>
