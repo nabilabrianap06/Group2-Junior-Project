@@ -9,13 +9,13 @@ public class AIComparison
     public List<string> ModelList { get; set; } = new();
     public double EfficiencyScore { get; set; }
 
-    public IReadOnlyList<(string ModelName, double EfficiencyScore)> CompareModels()
+    public IReadOnlyList<(string ModelName, double EfficiencyScore)> CompareModels(IEnumerable<EnvironmentalFactor> availableFactors)
     {
         var rankedModels = ModelList
             .Where(modelName => !string.IsNullOrWhiteSpace(modelName))
             .Select(modelName =>
             {
-                var factor = EnvironmentalFactor.GetFactorsByModel(modelName);
+                var factor = EnvironmentalFactor.GetFactorsByModel(modelName, availableFactors);
                 var score = CalculateEfficiencyScore(factor);
 
                 return (ModelName: modelName, EfficiencyScore: score);
@@ -31,10 +31,10 @@ public class AIComparison
     private static double CalculateEfficiencyScore(EnvironmentalFactor factor)
     {
         var weightedImpact =
-            (factor.EnergyFactorPerQuery * 0.5) +
-            (factor.Co2FactorPerQuery * 0.3) +
-            (factor.WaterFactorPerQuery * 0.2);
+            (factor.EnergyFactorPerQuery * 0.5m) +
+            (factor.Co2FactorPerQuery * 0.3m) +
+            (factor.WaterFactorPerQuery * 0.2m);
 
-        return Math.Round(100 / (1 + weightedImpact), 2);
+        return (double)Math.Round(100m / (1m + weightedImpact), 2);
     }
 }

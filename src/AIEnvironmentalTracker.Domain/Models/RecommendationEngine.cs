@@ -2,9 +2,9 @@ namespace AIEnvironmentalTracker.Domain.Models;
 
 public class RecommendationEngine
 {
-    private const double HighEnergyThreshold = 10;
-    private const double HighWaterThreshold = 5;
-    private const double HighCo2Threshold = 2;
+    private const decimal HighEnergyThreshold = 10;
+    private const decimal HighWaterThreshold = 5;
+    private const decimal HighCo2Threshold = 2;
 
     public int RecommendationId { get; set; }
     public string AdviceText { get; set; } = string.Empty;
