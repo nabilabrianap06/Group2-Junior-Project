@@ -25,7 +25,10 @@ public class EnvironmentalFactor
     // Main Constructor (Encapsulation & Validayion)
     public EnvironmentalFactor(string aiModelName, decimal waterFactor, decimal co2Factor, decimal energyFactor)
     {
-        AiModelName = aiModelName ?? throw new ArgumentNullException(nameof(aiModelName), "Model name cannot be null.");
+        if (string.IsNullOrWhiteSpace(aiModelName) || aiModelName.Length > 120)
+            throw new ArgumentException("Model name must contain 1 to 120 characters.", nameof(aiModelName));
+
+        AiModelName = aiModelName.Trim();
         
         ValidateFactors(waterFactor, co2Factor, energyFactor);
         

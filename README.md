@@ -17,9 +17,9 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 
 | Component | Technology |
 | :--- | :--- |
-| **Framework** | ASP.NET Core 9.0 (Blazor Web App) |
+| **Framework** | ASP.NET Core 10.0 (Blazor Web App) |
 | **Language** | C# |
-| **Database** | Microsoft SQL Server + Entity Framework Core |
+| **Database** | PostgreSQL + Entity Framework Core (Npgsql) |
 | **Authentication** | ASP.NET Core Identity (Role-based: User & Admin) |
 | **AI Integration** | Google.GenAI SDK (.NET) |
 | **Proxy** | YARP (Yet Another Reverse Proxy) |
@@ -31,7 +31,7 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 
 ### 1. Dynamic Token Tracking
 - Integrates directly with the **Google Gemini API** to retrieve real-time usage metadata (`promptTokenCount`, `candidatesTokenCount`).
-- Logs every interaction into a structured SQL Server database.
+- Stores manually entered usage estimates in PostgreSQL.
 
 ### 2. Environmental Impact Calculator
 - Uses a **token-weighted approximation** based on Google's published median-prompt estimates (May 2025).
@@ -71,3 +71,30 @@ AIEnvironmentalTracker.Web/
 
 ## Class Diagram
 ![Class Diagram](module3_classdiagram.png)
+
+## Homework 8: PostgreSQL and OOP
+
+The usage tracker on the home page demonstrates **encapsulation**. `EnvironmentalFactor` validates and holds per-query factors; `ImpactCalculator.ComputeImpact` calculates totals from a usage log and those factors; `UsageTrackingService.RecordAsync` saves the result in PostgreSQL for the signed-in user. The values entered in the form are user-provided estimates, not measurements from an AI provider. The existing `ai_usage_logs` and `chat_logs` tables are left intact.
+
+### Run locally
+
+1. Install .NET 10 and PostgreSQL. Create the `ai_environmental_db` database if it does not exist.
+2. Set the connection string outside source control. For the local PostgreSQL settings supplied with this assignment:
+
+   ```powershell
+   dotnet user-secrets set 'ConnectionStrings:DefaultConnection' 'Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=YOUR_POSTGRES_PASSWORD;SSL Mode=Prefer;Timeout=30;Command Timeout=30' --project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj
+   ```
+
+   Alternatively set `ConnectionStrings__DefaultConnection` in the process environment. Change the username and password for other machines.
+3. Apply the PostgreSQL migration, then run the app:
+
+   ```powershell
+   dotnet ef database update --project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj --startup-project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj
+   $env:ASPNETCORE_ENVIRONMENT = 'Development'
+   $env:ASPNETCORE_URLS = 'http://localhost:5000'
+   dotnet run --no-launch-profile --project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj
+   ```
+
+4. Open `http://localhost:5000`, register, use the confirmation link shown on the registration confirmation page, and sign in. Enter a model name, query count, and per-query estimates. The recent records table reads the saved data from PostgreSQL.
+
+The Gemini, OpenAI, DeepSeek, and Groq placeholder API keys are not needed for this worksheet's manual logging flow. They do not enable provider calls.
