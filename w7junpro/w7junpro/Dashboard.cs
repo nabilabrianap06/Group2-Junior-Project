@@ -6,11 +6,15 @@ namespace w7junpro
 {
     public partial class Dashboard : Form
     {
+        private Panel cInv = null!, cTok = null!, cKwh = null!, cCo2 = null!, cWater = null!;
+        private Panel cPhone = null!, cBottle = null!, cLed = null!;
+
         public Dashboard()
         {
             InitializeComponent();
             InisialisasiLofiDashboard();
             this.FormClosed += (s, e) => Application.Exit();
+            MuatRingkasan();
         }
 
         private void InisialisasiLofiDashboard()
@@ -77,11 +81,11 @@ namespace w7junpro
             int startX = 20;
             int gap = 10;
 
-            this.Controls.Add(BuatMetricCard("TOTAL INVOCATIONS", "0", "Real-time requests", startX + 0 * (cardW + gap), 110, cardW, cardH));
-            this.Controls.Add(BuatMetricCard("TOKENS PROCESSED", "0", "Prompt & payload", startX + 1 * (cardW + gap), 110, cardW, cardH));
-            this.Controls.Add(BuatMetricCard("GRID ELECTRICITY", "0.00 kWh", "Baseline estimation", startX + 2 * (cardW + gap), 110, cardW, cardH));
-            this.Controls.Add(BuatMetricCard("CARBON FOOTPRINT", "0.00 g", "CO2 eq factor", startX + 3 * (cardW + gap), 110, cardW, cardH));
-            this.Controls.Add(BuatMetricCard("DIRECT WATER USAGE", "0.00 mL", "Data-center WUE", startX + 4 * (cardW + gap), 110, cardW, cardH));
+            this.Controls.Add(cInv = BuatMetricCard("TOTAL INVOCATIONS", "0", "Real-time requests", startX + 0 * (cardW + gap), 110, cardW, cardH));
+            this.Controls.Add(cTok = BuatMetricCard("TOKENS PROCESSED", "0", "Prompt & payload", startX + 1 * (cardW + gap), 110, cardW, cardH));
+            this.Controls.Add(cKwh = BuatMetricCard("GRID ELECTRICITY", "0.00 kWh", "Baseline estimation", startX + 2 * (cardW + gap), 110, cardW, cardH));
+            this.Controls.Add(cCo2 = BuatMetricCard("CARBON FOOTPRINT", "0.00 g", "CO2 eq factor", startX + 3 * (cardW + gap), 110, cardW, cardH));
+            this.Controls.Add(cWater = BuatMetricCard("DIRECT WATER USAGE", "0.00 mL", "Data-center WUE", startX + 4 * (cardW + gap), 110, cardW, cardH));
 
             // 5. Section Title 2
             Label lblSec2 = new Label
@@ -97,9 +101,9 @@ namespace w7junpro
             // 6. Kartu Dampak Fisik
             int eqW = 296;
             int eqH = 75;
-            this.Controls.Add(BuatMetricCard("Smartphone Full Charge", "0.00 charges", "Standard 15 Wh battery", startX + 0 * (eqW + gap), 240, eqW, eqH));
-            this.Controls.Add(BuatMetricCard("Freshwater Bottle Ratio", "0.0000 bottles", "Fraction of 600 mL unit", startX + 1 * (eqW + gap), 240, eqW, eqH));
-            this.Controls.Add(BuatMetricCard("10W LED Duration", "0.00 hours", "Domestic LED bulb operation", startX + 2 * (eqW + gap), 240, eqW, eqH));
+            this.Controls.Add(cPhone = BuatMetricCard("Smartphone Full Charge", "0.00 charges", "Standard 15 Wh battery", startX + 0 * (eqW + gap), 240, eqW, eqH));
+            this.Controls.Add(cBottle = BuatMetricCard("Freshwater Bottle Ratio", "0.0000 bottles", "Fraction of 600 mL unit", startX + 1 * (eqW + gap), 240, eqW, eqH));
+            this.Controls.Add(cLed = BuatMetricCard("10W LED Duration", "0.00 hours", "Domestic LED bulb operation", startX + 2 * (eqW + gap), 240, eqW, eqH));
 
             // 7. Area Bawah Kiri: Console Simulasi
             GroupBox gbConsole = new GroupBox
@@ -132,6 +136,8 @@ namespace w7junpro
                 Size = new Size(410, 35),
                 BackColor = Color.LightSkyBlue
             };
+
+            btnSimulate.Click += (s, e) => JalankanSimulasi(cbModel.SelectedItem?.ToString() ?? "", txtPrompt.Text);
 
             gbConsole.Controls.Add(lblModel);
             gbConsole.Controls.Add(cbModel);
@@ -169,6 +175,44 @@ namespace w7junpro
             gbChart.Controls.Add(chartArea);
             this.Controls.Add(gbChart);
         }
+
+        private void JalankanSimulasi(string modelName, string prompt)
+        {
+            try
+            {
+                AIModel model = AIModel.Create(modelName); // polymorphism
+                ImpactResult result = model.CalculateImpact(prompt);
+                Database.SaveUsage(model, prompt, result);
+                MuatRingkasan();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal menyimpan ke PostgreSQL: " + ex.Message);
+            }
+        }
+
+        private void MuatRingkasan()
+        {
+            try
+            {
+                Database.Initialize();
+                UsageSummary u = Database.GetSummary();
+                SetNilai(cInv, u.Invocations.ToString());
+                SetNilai(cTok, u.Tokens.ToString());
+                SetNilai(cKwh, u.EnergyKWh.ToString("0.000000") + " kWh");
+                SetNilai(cCo2, u.CarbonG.ToString("0.0000") + " g");
+                SetNilai(cWater, u.WaterMl.ToString("0.0000") + " mL");
+                SetNilai(cPhone, (u.EnergyKWh * 1000 / 15.0).ToString("0.0000") + " charges");
+                SetNilai(cBottle, (u.WaterMl / 600.0).ToString("0.0000") + " bottles");
+                SetNilai(cLed, (u.EnergyKWh * 1000 / 10.0).ToString("0.0000") + " hours");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Koneksi PostgreSQL gagal: " + ex.Message);
+            }
+        }
+
+        private static void SetNilai(Panel card, string text) => card.Controls[1].Text = text;
 
         private Panel BuatMetricCard(string judul, string nilai, string catatan, int x, int y, int w, int h)
         {
