@@ -23,15 +23,29 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// The connection string comes from user-secrets (Development) or the environment variable
+// ConnectionStrings__DefaultConnection. It is never stored in appsettings.json.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "The PostgreSQL connection string is not set. Set 'ConnectionStrings:DefaultConnection' with " +
+        "dotnet user-secrets, or set the environment variable ConnectionStrings__DefaultConnection. See README.md.");
+}
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddScoped<UsageTrackingService>();
+builder.Services.AddScoped<BrowserTimeService>();
+
+// Gemini web API: key from user-secrets "Gemini:ApiKey" or environment variable Gemini__ApiKey.
+builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));
+builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(60));
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        // No real email sender is configured, so accounts can sign in right after registering.
+        options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -41,6 +55,23 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 var app = builder.Build();
+
+// Create or update the database schema on startup, so setup does not need `dotnet ef`.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogCritical(ex,
+            "Could not apply database migrations. Check that PostgreSQL is running, the database in the " +
+            "connection string exists, and the username and password are correct.");
+        throw;
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

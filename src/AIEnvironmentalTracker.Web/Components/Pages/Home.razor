@@ -1,7 +1,5 @@
 @page "/"
 @using System.Security.Claims
-@using AIEnvironmentalTracker.Web.Data
-@using AIEnvironmentalTracker.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @rendermode InteractiveServer
@@ -12,6 +10,9 @@
 
 <h1>OxyGenAI Usage Tracker</h1>
 <p>Record AI usage and estimate its environmental impact using factors you provide.</p>
+
+<h2 class="h5">Your totals</h2>
+<UsageSummaryCard Summary="summary" />
 
 <div class="card mb-4">
     <div class="card-body">
@@ -46,35 +47,11 @@
         {
             <p class="mt-3 mb-0" role="status">@message</p>
         }
+        <RecommendationList Items="recommendations" />
     </div>
 </div>
 
-<h2 class="h5">Recent usage</h2>
-@if (records.Count == 0)
-{
-    <p>No usage recorded yet.</p>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead><tr><th>Time (UTC)</th><th>Model</th><th>Queries</th><th>Water (mL)</th><th>CO₂ (g)</th><th>Energy (Wh)</th></tr></thead>
-            <tbody>
-                @foreach (var record in records)
-                {
-                    <tr>
-                        <td>@record.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@record.AiModelName</td>
-                        <td>@record.QueryCount</td>
-                        <td>@record.TotalWater.ToString("0.######")</td>
-                        <td>@record.TotalCo2.ToString("0.######")</td>
-                        <td>@record.TotalEnergy.ToString("0.######")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+<RecentUsageTable Records="records" />
 
 @code {
     private string? userId;
@@ -86,13 +63,21 @@ else
     private bool saving;
     private string? message;
     private List<UsageRecord> records = [];
+    private UsageSummary? summary;
+    private IReadOnlyList<RecommendationEngine> recommendations = [];
 
     protected override async Task OnInitializedAsync()
     {
         var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         userId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId is not null)
-            records = await UsageTrackingService.GetRecentAsync(userId);
+            await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        records = await UsageTrackingService.GetRecentAsync(userId!);
+        summary = await UsageTrackingService.GetSummaryAsync(userId!);
     }
 
     private async Task SaveAsync()
@@ -100,11 +85,13 @@ else
         if (userId is null || saving) return;
         saving = true;
         message = null;
+        recommendations = [];
         try
         {
-            await UsageTrackingService.RecordAsync(userId, modelName, queryCount,
+            var result = await UsageTrackingService.RecordAsync(userId, modelName, queryCount,
                 waterPerQuery, co2PerQuery, energyPerQuery);
-            records = await UsageTrackingService.GetRecentAsync(userId);
+            recommendations = result.Recommendations;
+            await LoadAsync();
             message = "Usage recorded in PostgreSQL.";
         }
         catch (ArgumentException ex)

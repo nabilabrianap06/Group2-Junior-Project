@@ -1,0 +1,156 @@
+@page "/ask-gemini"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UsageTrackingService UsageTrackingService
+@inject GeminiService Gemini
+
+<PageTitle>Ask Gemini · OxyGenAI</PageTitle>
+
+<h1>Ask Gemini</h1>
+<p>
+    Send a prompt to Google Gemini (<code>@Gemini.Model</code>). The app reads the token counts from the
+    reply, estimates the environmental impact and saves it to your usage history.
+</p>
+
+@if (!Gemini.IsConfigured)
+{
+    <div class="alert alert-warning" role="alert">@GeminiService.MissingKeyMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form @onsubmit="SendAsync" @onsubmit:preventDefault>
+            <label class="form-label" for="prompt">Your prompt</label>
+            <textarea id="prompt" class="form-control" rows="4" maxlength="@MaxPromptLength"
+                      @bind="prompt" @bind:event="oninput" disabled="@sending"></textarea>
+            <button class="btn btn-primary mt-3" type="submit"
+                    disabled="@(sending || string.IsNullOrWhiteSpace(prompt) || !Gemini.IsConfigured)">
+                @(sending ? "Waiting for Gemini…" : "Send to Gemini")
+            </button>
+        </form>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger mt-3 mb-0" role="alert">@error</div>
+        }
+
+        @if (reply is not null)
+        {
+            <h2 class="h6 mt-4">Reply</h2>
+            <div class="border rounded p-3 bg-body-tertiary" style="white-space: pre-wrap">@reply.Text</div>
+
+            <h2 class="h6 mt-4">Tokens and estimated impact</h2>
+            <div class="table-responsive">
+                <table class="table table-sm w-auto">
+                    <tbody>
+                        <tr><th scope="row">Prompt tokens</th><td>@reply.PromptTokens</td></tr>
+                        <tr><th scope="row">Response tokens</th><td>@reply.CandidateTokens</td></tr>
+                        <tr><th scope="row">Total tokens (incl. thinking)</th><td>@reply.TotalTokens</td></tr>
+                        @if (saved is not null)
+                        {
+                            <tr><th scope="row">Water (estimate)</th><td>@saved.TotalWater.ToString("0.######") mL</td></tr>
+                            <tr><th scope="row">CO₂ (estimate)</th><td>@saved.TotalCo2.ToString("0.######") g</td></tr>
+                            <tr><th scope="row">Energy (estimate)</th><td>@saved.TotalEnergy.ToString("0.######") Wh</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (!string.IsNullOrEmpty(saveMessage))
+            {
+                <p class="mb-0" role="status">@saveMessage</p>
+            }
+            <RecommendationList Items="recommendations" />
+        }
+    </div>
+</div>
+
+<div class="alert alert-info small">
+    <strong>How the estimate works.</strong>
+    Google published estimates for the median Gemini Apps text prompt (May 2025):
+    @TokenImpactEstimator.ReferenceEnergyWh Wh energy, @TokenImpactEstimator.ReferenceCo2Grams g CO₂e and
+    @TokenImpactEstimator.ReferenceWaterMl mL water. Google did not publish the token count of that prompt,
+    so this app assumes @TokenImpactEstimator.ReferenceTokenCount tokens and scales linearly:
+    impact = reference × (total tokens ÷ @TokenImpactEstimator.ReferenceTokenCount).
+    These are rough estimates, not measurements.
+</div>
+
+<h2 class="h5">Your totals</h2>
+<UsageSummaryCard Summary="summary" />
+
+<RecentUsageTable Records="records" />
+
+@code {
+    private const int MaxPromptLength = 4000;
+
+    private string? userId;
+    private string prompt = string.Empty;
+    private bool sending;
+    private string? error;
+    private string? saveMessage;
+    private GeminiReply? reply;
+    private UsageRecord? saved;
+    private IReadOnlyList<RecommendationEngine> recommendations = [];
+    private List<UsageRecord> records = [];
+    private UsageSummary? summary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is not null)
+            await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        records = await UsageTrackingService.GetRecentAsync(userId!);
+        summary = await UsageTrackingService.GetSummaryAsync(userId!);
+    }
+
+    private async Task SendAsync()
+    {
+        if (userId is null || sending || string.IsNullOrWhiteSpace(prompt)) return;
+
+        sending = true;
+        error = null;
+        saveMessage = null;
+        reply = null;
+        saved = null;
+        recommendations = [];
+        try
+        {
+            reply = await Gemini.GenerateAsync(prompt);
+        }
+        catch (GeminiException ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            sending = false;
+        }
+
+        if (reply is null) return;
+
+        try
+        {
+            var factor = TokenImpactEstimator.CreateFactor(Gemini.Model, reply.TotalTokens);
+            var result = await UsageTrackingService.RecordAsync(userId, queryCount: 1, factor);
+            saved = result.Record;
+            recommendations = result.Recommendations;
+            saveMessage = "Saved to your usage history.";
+            await LoadAsync();
+        }
+        catch (ArgumentException ex)
+        {
+            saveMessage = $"The reply was received but could not be saved: {ex.Message}";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+        {
+            saveMessage = "The reply was received but could not be saved. Please check the database connection.";
+        }
+    }
+}

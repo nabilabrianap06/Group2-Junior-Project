@@ -76,25 +76,29 @@ AIEnvironmentalTracker.Web/
 
 The usage tracker on the home page demonstrates **encapsulation**. `EnvironmentalFactor` validates and holds per-query factors; `ImpactCalculator.ComputeImpact` calculates totals from a usage log and those factors; `UsageTrackingService.RecordAsync` saves the result in PostgreSQL for the signed-in user. The values entered in the form are user-provided estimates, not measurements from an AI provider. The existing `ai_usage_logs` and `chat_logs` tables are left intact.
 
+## Module 10: Minimum Viable Product
+
+- **Usage tracker** (home page): manual records go through `EnvironmentalFactor` and `ImpactCalculator`. After saving, `RecommendationEngine` shows advice for that record. A summary shows your total queries, water (mL), CO₂ (g) and energy (Wh), held in a `CarbonFootprintReport`. Times are shown in your browser's time zone.
+- **Ask Gemini** (signed-in users only): `GeminiService` calls the Gemini REST API (`generateContent`, default model `gemini-2.5-flash`) and reads `usageMetadata` from the reply. `TokenImpactEstimator` turns the total token count into an `EnvironmentalFactor`. It uses a token-weighted approximation of Google's published estimate for the median Gemini Apps text prompt (May 2025): 0.24 Wh, 0.03 gCO₂e and 0.26 mL water, assuming that median prompt is 500 tokens. The result is saved through `UsageTrackingService`. These figures are estimates, not measurements.
+- Registration no longer needs email confirmation, and database migrations are applied automatically on startup.
+
 ### Run locally
 
-1. Install .NET 10 and PostgreSQL. Create the `ai_environmental_db` database if it does not exist.
-2. Set the connection string outside source control. For the local PostgreSQL settings supplied with this assignment:
+1. Install the .NET 10 SDK and PostgreSQL. Create an empty database, for example `ai_environmental_db`. The app creates the tables itself the first time it starts.
+2. Set the connection string and Gemini API key outside source control. Never put them in `appsettings.json`.
 
    ```powershell
-   dotnet user-secrets set 'ConnectionStrings:DefaultConnection' 'Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=YOUR_POSTGRES_PASSWORD;SSL Mode=Prefer;Timeout=30;Command Timeout=30' --project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=YOUR_POSTGRES_PASSWORD" --project src/AIEnvironmentalTracker.Web
+   dotnet user-secrets set "Gemini:ApiKey" "YOUR_GEMINI_API_KEY" --project src/AIEnvironmentalTracker.Web
    ```
 
-   Alternatively set `ConnectionStrings__DefaultConnection` in the process environment. Change the username and password for other machines.
-3. Apply the PostgreSQL migration, then run the app:
+   User secrets are only loaded in the Development environment. In any other environment, set the environment variables `ConnectionStrings__DefaultConnection` and `Gemini__ApiKey` instead. You can get a Gemini key from Google AI Studio. To use a different model, set `Gemini__Model`.
+3. Run the app:
 
    ```powershell
-   dotnet ef database update --project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj --startup-project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj
-   $env:ASPNETCORE_ENVIRONMENT = 'Development'
-   $env:ASPNETCORE_URLS = 'http://localhost:5000'
-   dotnet run --no-launch-profile --project src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj
+   dotnet run --project src/AIEnvironmentalTracker.Web --launch-profile http
    ```
 
-4. Open `http://localhost:5000`, register, use the confirmation link shown on the registration confirmation page, and sign in. Enter a model name, query count, and per-query estimates. The recent records table reads the saved data from PostgreSQL.
+4. Open `http://localhost:5260` and register; you are signed in right away. Use **Usage tracker** to enter manual estimates and **Ask Gemini** to send live prompts.
 
-The Gemini, OpenAI, DeepSeek, and Groq placeholder API keys are not needed for this worksheet's manual logging flow. They do not enable provider calls.
+If the Gemini key is missing, the Ask Gemini page explains how to set it. Network errors, rejected keys and rate limits appear as messages, and the app keeps running.
