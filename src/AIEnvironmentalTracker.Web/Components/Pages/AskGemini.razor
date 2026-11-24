@@ -146,7 +146,7 @@
         }
         catch (ArgumentException ex)
         {
-            saveMessage = $"The reply was received but could not be saved: {ex.Message}";
+            saveMessage = $"The reply was received but could not be saved: {UserMessages.From(ex)}";
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateException)
         {

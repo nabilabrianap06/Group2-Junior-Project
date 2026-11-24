@@ -12,3 +12,9 @@
 ## User-specific files
 *.rsuser
 *.userprefs
+
+## Installed app settings (contain passwords and API keys)
+oxygenai.settings.json
+
+## Packaged release output
+dist/

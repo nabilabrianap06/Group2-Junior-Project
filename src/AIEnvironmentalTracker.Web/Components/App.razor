@@ -8,7 +8,8 @@
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["AIEnvironmentalTracker.Web.styles.css"]" />
+    @* Scoped CSS bundle is named after the assembly (OxyGenAI.exe in the installed package). *@
+    <link rel="stylesheet" href="@Assets[$"{typeof(App).Assembly.GetName().Name}.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />

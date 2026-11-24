@@ -96,7 +96,7 @@
         }
         catch (ArgumentException ex)
         {
-            message = ex.Message;
+            message = UserMessages.From(ex);
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateException)
         {

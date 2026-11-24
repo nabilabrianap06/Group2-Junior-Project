@@ -53,6 +53,6 @@ public class EnvironmentalFactor
     private void ValidateFactors(decimal water, decimal co2, decimal energy)
     {
         if (water < 0 || co2 < 0 || energy < 0)
-            throw new ArgumentOutOfRangeException("Environmental factors cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(water), "Environmental factors cannot be negative.");
     }
 }

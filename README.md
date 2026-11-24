@@ -82,6 +82,17 @@ The usage tracker on the home page demonstrates **encapsulation**. `Environmenta
 - **Ask Gemini** (signed-in users only): `GeminiService` calls the Gemini REST API (`generateContent`, default model `gemini-2.5-flash`) and reads `usageMetadata` from the reply. `TokenImpactEstimator` turns the total token count into an `EnvironmentalFactor`. It uses a token-weighted approximation of Google's published estimate for the median Gemini Apps text prompt (May 2025): 0.24 Wh, 0.03 gCO₂e and 0.26 mL water, assuming that median prompt is 500 tokens. The result is saved through `UsageTrackingService`. These figures are estimates, not measurements.
 - Registration no longer needs email confirmation, and database migrations are applied automatically on startup.
 
+### Install the packaged app (no .NET SDK needed)
+
+1. Install PostgreSQL and make sure it is running.
+2. Extract `OxyGenAI-win-x64.zip` (built with `publish.ps1`, see below).
+3. Double-click `Setup OxyGenAI.bat` and enter your PostgreSQL password and, optionally, your Gemini API key. They are saved in `oxygenai.settings.json` next to `OxyGenAI.exe`, which is never committed.
+4. Double-click `Start OxyGenAI.bat`. The database is created on first start and the browser opens at `http://localhost:5260`.
+
+The full user guide, with troubleshooting, is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
+
+To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish.ps1`. It writes a self-contained `dist/OxyGenAI-win-x64.zip`.
+
 ### Run locally
 
 1. Install the .NET 10 SDK and PostgreSQL. Create an empty database, for example `ai_environmental_db`. The app creates the tables itself the first time it starts.

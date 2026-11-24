@@ -1,12 +1,28 @@
-using Microsoft.AspNetCore.Components.Authorization;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.FileProviders;
 using AIEnvironmentalTracker.Web.Components;
 using AIEnvironmentalTracker.Web.Components.Account;
 using AIEnvironmentalTracker.Web.Data;
 using AIEnvironmentalTracker.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Installed (published) app: settings are read from oxygenai.settings.json next to the .exe,
+// so installing needs no environment variables. The file is created from
+// oxygenai.settings.example.json during setup and is never committed (see .gitignore).
+// It goes right after the other JSON files, so environment variables and command-line arguments still win.
+var settingsFile = new JsonConfigurationSource
+{
+    FileProvider = new PhysicalFileProvider(AppContext.BaseDirectory),
+    Path = "oxygenai.settings.json",
+    Optional = true,
+    ReloadOnChange = false
+};
+var lastJsonSource = builder.Configuration.Sources.ToList().FindLastIndex(source => source is JsonConfigurationSource);
+builder.Configuration.Sources.Insert(lastJsonSource + 1, settingsFile);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -30,7 +46,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException(
         "The PostgreSQL connection string is not set. Set 'ConnectionStrings:DefaultConnection' with " +
-        "dotnet user-secrets, or set the environment variable ConnectionStrings__DefaultConnection. See README.md.");
+        "dotnet user-secrets, set the environment variable ConnectionStrings__DefaultConnection, or (installed app) " +
+        "fill in oxygenai.settings.json next to OxyGenAI.exe. See README.md.");
 }
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -95,5 +112,24 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Installed app: open the browser on the app once it is listening ("OpenBrowser": true).
+if (app.Configuration.GetValue<bool>("OpenBrowser"))
+{
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        var url = app.Urls.FirstOrDefault(u => u.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                  ?? app.Urls.FirstOrDefault();
+        if (url is null) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogWarning(ex, "Could not open the browser. Open {Url} yourself.", url);
+        }
+    });
+}
 
 app.Run();

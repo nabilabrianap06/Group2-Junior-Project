@@ -29,8 +29,9 @@ public class GeminiException(string message, Exception? inner = null) : Exceptio
 public class GeminiService(HttpClient http, IOptions<GeminiOptions> options, ILogger<GeminiService> logger)
 {
     public const string MissingKeyMessage =
-        "The Gemini API key is not set. Run: dotnet user-secrets set \"Gemini:ApiKey\" \"YOUR_KEY\" " +
-        "--project src/AIEnvironmentalTracker.Web, or set the environment variable Gemini__ApiKey, then restart the app.";
+        "The Gemini API key is not set, so Ask Gemini is turned off. Installed app: run \"Setup OxyGenAI.bat\", " +
+        "enter your key, then restart OxyGenAI. From source: dotnet user-secrets set \"Gemini:ApiKey\" \"YOUR_KEY\" " +
+        "--project src/AIEnvironmentalTracker.Web, or set the environment variable Gemini__ApiKey.";
 
     private readonly GeminiOptions settings = options.Value;
 

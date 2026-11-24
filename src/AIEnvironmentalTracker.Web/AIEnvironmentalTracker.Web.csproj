@@ -8,6 +8,11 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
+  <!-- Installed package (publish.ps1): the program is named OxyGenAI.exe. -->
+  <PropertyGroup Condition="'$(OxyGenAIPackage)' == 'true'">
+    <AssemblyName>OxyGenAI</AssemblyName>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
