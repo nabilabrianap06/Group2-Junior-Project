@@ -1,0 +1,50 @@
+@inject BrowserTimeService BrowserTime
+
+<h2 class="h5">Recent usage</h2>
+@if (Records.Count == 0)
+{
+    <p>No usage recorded yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Time (@BrowserTime.ZoneId)</th>
+                    <th>Model</th>
+                    <th>Queries</th>
+                    <th>Water (mL)</th>
+                    <th>CO₂ (g)</th>
+                    <th>Energy (Wh)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var record in Records)
+                {
+                    <tr>
+                        <td>@BrowserTime.ToLocal(record.Timestamp).ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@record.AiModelName</td>
+                        <td>@record.QueryCount</td>
+                        <td>@record.TotalWater.ToString("0.######")</td>
+                        <td>@record.TotalCo2.ToString("0.######")</td>
+                        <td>@record.TotalEnergy.ToString("0.######")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<UsageRecord> Records { get; set; } = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !BrowserTime.IsLoaded)
+        {
+            await BrowserTime.EnsureLoadedAsync();
+            StateHasChanged();
+        }
+    }
+}

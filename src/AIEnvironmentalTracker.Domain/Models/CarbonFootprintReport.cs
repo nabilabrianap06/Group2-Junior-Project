@@ -34,7 +34,7 @@ public class CarbonFootprintReport
     public void GenerateReport(decimal waterUsage, decimal co2Emission, decimal energyUsage)
     {
         if (waterUsage < 0 || co2Emission < 0 || energyUsage < 0)
-            throw new ArgumentOutOfRangeException("Usage values cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(waterUsage), "Usage values cannot be negative.");
 
         TotalWaterUsage += waterUsage;
         TotalCO2Emission += co2Emission;

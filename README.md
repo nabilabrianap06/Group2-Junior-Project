@@ -17,9 +17,9 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 
 | Component | Technology |
 | :--- | :--- |
-| **Framework** | ASP.NET Core 9.0 (Blazor Web App) |
+| **Framework** | ASP.NET Core 10.0 (Blazor Web App) |
 | **Language** | C# |
-| **Database** | Microsoft SQL Server + Entity Framework Core |
+| **Database** | PostgreSQL + Entity Framework Core (Npgsql) |
 | **Authentication** | ASP.NET Core Identity (Role-based: User & Admin) |
 | **AI Integration** | Google.GenAI SDK (.NET) |
 | **Proxy** | YARP (Yet Another Reverse Proxy) |
@@ -31,7 +31,7 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 
 ### 1. Dynamic Token Tracking
 - Integrates directly with the **Google Gemini API** to retrieve real-time usage metadata (`promptTokenCount`, `candidatesTokenCount`).
-- Logs every interaction into a structured SQL Server database.
+- Stores manually entered usage estimates in PostgreSQL.
 
 ### 2. Environmental Impact Calculator
 - Uses a **token-weighted approximation** based on Google's published median-prompt estimates (May 2025).
@@ -71,3 +71,45 @@ AIEnvironmentalTracker.Web/
 
 ## Class Diagram
 ![Class Diagram](module3_classdiagram.png)
+
+## Homework 8: PostgreSQL and OOP
+
+The usage tracker on the home page demonstrates **encapsulation**. `EnvironmentalFactor` validates and holds per-query factors; `ImpactCalculator.ComputeImpact` calculates totals from a usage log and those factors; `UsageTrackingService.RecordAsync` saves the result in PostgreSQL for the signed-in user. The values entered in the form are user-provided estimates, not measurements from an AI provider. The existing `ai_usage_logs` and `chat_logs` tables are left intact.
+
+## Module 10: Minimum Viable Product
+
+- **Usage tracker** (home page): manual records go through `EnvironmentalFactor` and `ImpactCalculator`. After saving, `RecommendationEngine` shows advice for that record. A summary shows your total queries, water (mL), CO₂ (g) and energy (Wh), held in a `CarbonFootprintReport`. Times are shown in your browser's time zone.
+- **Ask Gemini** (signed-in users only): `GeminiService` calls the Gemini REST API (`generateContent`, default model `gemini-2.5-flash`) and reads `usageMetadata` from the reply. `TokenImpactEstimator` turns the total token count into an `EnvironmentalFactor`. It uses a token-weighted approximation of Google's published estimate for the median Gemini Apps text prompt (May 2025): 0.24 Wh, 0.03 gCO₂e and 0.26 mL water, assuming that median prompt is 500 tokens. The result is saved through `UsageTrackingService`. These figures are estimates, not measurements.
+- Registration no longer needs email confirmation, and database migrations are applied automatically on startup.
+
+### Install the packaged app (no .NET SDK needed)
+
+1. Install PostgreSQL and make sure it is running.
+2. Extract `OxyGenAI-win-x64.zip` (built with `publish.ps1`, see below).
+3. Double-click `Setup OxyGenAI.bat` and enter your PostgreSQL password and, optionally, your Gemini API key. They are saved in `oxygenai.settings.json` next to `OxyGenAI.exe`, which is never committed.
+4. Double-click `Start OxyGenAI.bat`. The database is created on first start and the browser opens at `http://localhost:5260`.
+
+The full user guide, with troubleshooting, is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
+
+To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish.ps1`. It writes a self-contained `dist/OxyGenAI-win-x64.zip`.
+
+### Run locally
+
+1. Install the .NET 10 SDK and PostgreSQL. Create an empty database, for example `ai_environmental_db`. The app creates the tables itself the first time it starts.
+2. Set the connection string and Gemini API key outside source control. Never put them in `appsettings.json`.
+
+   ```powershell
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=YOUR_POSTGRES_PASSWORD" --project src/AIEnvironmentalTracker.Web
+   dotnet user-secrets set "Gemini:ApiKey" "YOUR_GEMINI_API_KEY" --project src/AIEnvironmentalTracker.Web
+   ```
+
+   User secrets are only loaded in the Development environment. In any other environment, set the environment variables `ConnectionStrings__DefaultConnection` and `Gemini__ApiKey` instead. You can get a Gemini key from Google AI Studio. To use a different model, set `Gemini__Model`.
+3. Run the app:
+
+   ```powershell
+   dotnet run --project src/AIEnvironmentalTracker.Web --launch-profile http
+   ```
+
+4. Open `http://localhost:5260` and register; you are signed in right away. Use **Usage tracker** to enter manual estimates and **Ask Gemini** to send live prompts.
+
+If the Gemini key is missing, the Ask Gemini page explains how to set it. Network errors, rejected keys and rate limits appear as messages, and the app keeps running.

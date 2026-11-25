@@ -1,0 +1,15 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=CHANGE_ME"
+  },
+  "Gemini": {
+    "ApiKey": "",
+    "Model": "gemini-2.5-flash"
+  },
+  "Kestrel": {
+    "Endpoints": {
+      "Http": { "Url": "http://localhost:5260" }
+    }
+  },
+  "OpenBrowser": true
+}

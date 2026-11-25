@@ -1,0 +1,18 @@
+@* Recommendations from RecommendationEngine for the record that was just saved. *@
+
+@if (Items.Count > 0)
+{
+    <div class="alert alert-success mt-3 mb-0">
+        <h3 class="h6">Recommendations</h3>
+        <ul class="mb-0">
+            @foreach (var item in Items)
+            {
+                <li><span class="badge text-bg-secondary me-2">@item.TargetMetric</span>@item.AdviceText</li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<RecommendationEngine> Items { get; set; } = [];
+}

@@ -2,6 +2,14 @@ namespace AIEnvironmentalTracker.Domain.Models;
 
 public class RegisteredUser : User
 {
+    private RegisteredUser() { }
+
+    private RegisteredUser(string username, string email, string password)
+        : base(username, email, password, UserRole.RegisteredUser) { }
+
+    public static RegisteredUser Register(string username, string email, string password)
+        => new(username, email, password);
+
     // Attributes matching UML
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
 
@@ -22,13 +30,13 @@ public class RegisteredUser : User
 
     public CarbonFootprintReport ViewCarbonFootprint()
     {
-        return CarbonFootprintReports.LastOrDefault() ?? new CarbonFootprintReport();
+        return CarbonFootprintReports.LastOrDefault() ?? new CarbonFootprintReport(UserId);
     }
 
-    public AIComparison CompareAIModels()
+    public AIComparison CompareAIModels(IEnumerable<EnvironmentalFactor> availableFactors)
     {
         var comparison = new AIComparison();
-        comparison.CompareModels();
+        comparison.CompareModels(availableFactors);
         AIComparisons.Add(comparison);
         return comparison;
     }
