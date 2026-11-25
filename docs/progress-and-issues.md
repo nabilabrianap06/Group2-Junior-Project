@@ -17,9 +17,9 @@ Requirement for the course: **the codebase is C# and the output is a Windows app
 | Trend dashboard | Working, not yet checked in a browser by a second person |
 | Admin panel | Working (service and access rules tested); button clicks not yet tested in a browser |
 | Impact formula | Implemented from Google's published method; same factor for every model |
-| Windows-app output | **Partly met**: self-contained `OxyGenAI.exe` that opens the browser; no native window yet |
-| Automated tests | 59 xUnit tests, all passing (`dotnet test AIEnvironmentalTracker.slnx`) |
-| Cloud deployment | Not done (not required for a Windows app; see decisions) |
+| Windows-app output | **Met**: `OxyGenAI-Desktop.exe` is a WinForms window hosting the app in WebView2; the package also keeps the browser start. Tested with the shell's `--check` in source and package mode; not yet clicked through by a person |
+| Automated tests | 98 xUnit tests, all passing (`dotnet test AIEnvironmentalTracker.slnx`); they include the Windows shell's address policy, server locator and start-up wait |
+| Deployment | Not planned. The final result is the Windows application (ADR-008) |
 
 ---
 
@@ -43,7 +43,6 @@ Requirement for the course: **the codebase is C# and the output is a Windows app
 ### Not done
 | Feature | Notes |
 | :--- | :--- |
-| Native Windows window | Plan: WinForms shell hosting the Blazor app in WebView2 (see decisions, ADR-007). |
 | Per-model energy figures | Not available: Google publishes one figure for Gemini, not one per model (ADR-005). Needs real measurements or a published source before any difference between models can be claimed. |
 | Other LLM providers | Future work (ADR-010). |
 | Automatic detection of AI apps | `AIUsageLog.ScanDeviceActivity` scans OS processes; it only makes sense inside a desktop app, not on a web server. |
@@ -71,7 +70,7 @@ Not planned (they were never part of the README or the class diagram): sending e
 
 | # | Issue | Impact | Suggested action |
 | :-- | :--- | :--- | :--- |
-| 1 | **Windows-app requirement only partly met.** `OxyGenAI.exe` runs a local web server and opens the browser. | May be judged as a web app. | Confirm with the lecturer; if needed build the WinForms + WebView2 shell (small). |
+| 1 | ~~Windows-app requirement only partly met (browser only).~~ | Resolved by the WinForms + WebView2 shell (ADR-007). Remaining: the lecturer has not confirmed that this meets the requirement; WebView2 Runtime is needed (included in Windows 11). | Ask the lecturer once. |
 | 2 | **Gemini free quota is shared by all users.** The default is now `gemini-3.5-flash-lite` (15 requests/min, 500/day per project in AI Studio); `gemini-3.6-flash` allows only 20/day. Google also answers HTTP 503 when busy: `gemini-3.1-flash-lite`, `gemini-3.8-flash` and `gemini-4-hydrogen` returned 503 and `gemini-2.5-flash-lite` returned 404 in the test on 2026-11-25, so they are not offered. | Many testers can exhaust the project quota; a model can be unavailable at any time. | Per-user allowance is in place (`AskLimits`). Re-test the 503 models later and add them to `Gemini:AllowedModels`. |
 | 3 | ~~`gemini-2.5-flash` is deprecated (routed to `gemini-3.5-flash-lite` from 2026-12-01).~~ | Resolved: the default model is set explicitly to `gemini-3.5-flash-lite`. | – |
 | 4 | **Free-tier prompts may be used by Google to improve its products.** | Privacy for testers. | Tell testers not to enter sensitive text. |
@@ -81,7 +80,7 @@ Not planned (they were never part of the README or the class diagram): sending e
 | 8 | **Admin bootstrap.** The account named in `Admin:Email` becomes admin when it registers; there is no email confirmation. | If the admin does not register first, someone else could register that address. | Register the admin account first; keep `Admin:Email` out of public config until then. |
 | 9 | **Suspended users keep their session for up to about 30 minutes.** Identity revalidates the security stamp every 30 minutes. | A suspended user may still browse briefly. New logins are refused immediately. | Shorten the revalidation interval if needed. |
 | 10 | **Role changes need a new sign-in.** Roles are stored in the cookie. | A newly promoted admin must log in again. | Document it. |
-| 11 | ~~No automated tests.~~ | Resolved: 59 xUnit tests (estimator, trend, admin rules, limiter, Gemini client with a fake HTTP handler, comparison). | Keep adding tests with each feature. Black-box testing of the UI is still manual. |
+| 11 | ~~No automated tests.~~ | Resolved: 98 xUnit tests (estimator, trend, admin rules, limiter, Gemini client with a fake HTTP handler, comparison, Windows shell logic). | Keep adding tests with each feature. Black-box testing of the UI is still manual. |
 | 12 | ~~Repository hygiene: `app.db` and an outdated README.~~ | Resolved: `app.db` removed, README corrected. | – |
 | 13 | **Neon free database sleeps when idle.** | The first request after a pause can take seconds. | Warn testers; retry once. |
 | 14 | **Secrets.** Connection strings and API keys live in user-secrets, environment variables or `oxygenai.settings.json` (git-ignored). | A key pasted into chat or committed is compromised. | Never paste or commit keys; rotate any key that was exposed. |
@@ -90,20 +89,23 @@ Not planned (they were never part of the README or the class diagram): sending e
 
 ## 5. Suggested next steps (priority order)
 
-1. Decide the Windows-app question (issue 1) with the lecturer.
-2. Run Black-box test 23 (a successful Gemini reply) and the new pages in a browser (checklist below).
+1. Confirm the Windows-app approach with the lecturer (issue 1).
+2. Run Black-box test 23 (a successful Gemini reply) when a real API key is available.
 3. Re-test the Gemini models that answered 503 and add the stable ones to `Gemini:AllowedModels` (issue 2).
-4. Build the WinForms + WebView2 shell if the lecturer requires a native window (ADR-007).
+4. Click through the window by hand, together with the other pages still waiting for a UI check (see "Waiting for a UI check" below).
 5. Future work: other LLM providers (ADR-010) and per-model energy figures from a real source (issue 5).
 
-## 6. Black-box test checklist
+## 5a. Waiting for a UI check (to do later, by hand in the window or a browser)
 
-- Register with a valid and an invalid email/password; log in; log out; log in with a wrong password.
-- Open `/`, `/dashboard`, `/ask-gemini` while logged out (expect redirect to login) and logged in.
-- Usage tracker: valid record; zero or negative query count; very large numbers; empty model name.
-- Dashboard: switch Daily / Weekly / Monthly; empty state for a new account; record appears after saving.
-- Ask Gemini: with and without an API key; empty prompt; a prompt over 4,000 characters; each model in the list; the daily-allowance and pause messages; rate-limit message.
-- Compare models: two models; one model ticked only (button disabled); a model that returns an error; check that each answer appears in the usage history.
-- Admin (admin account): add user, edit email, suspend (then try to log in as that user), reactivate, grant and revoke admin; try to suspend yourself and the last admin.
-- Admin page as a normal user (expect "Access denied").
-- Packaged build: unzip, run `Setup OxyGenAI.bat`, `Start OxyGenAI.bat` on a PC without the .NET SDK.
+Everything below works at service level and in automated tests, and the pages render, but nobody has clicked it yet:
+
+- The Windows shell: window opens, title follows the page, links to other sites open in the browser, closing the window stops the server.
+- Dashboard: switching Daily, Weekly and Monthly; empty state; a new record appears.
+- Admin panel: add, edit, suspend, reactivate, make admin, and the refusals for yourself and the last admin.
+- Ask Gemini and Compare models with a real API key: model dropdown, answers, token counts, saved records, limit messages (this includes black-box test 23).
+
+## 6. Black-box testing
+
+Decision: the features added after Module 10 (dashboard, admin panel, model choice, Compare models, usage limits, Windows shell) are **not** put through a black-box test round. They are covered by the automated tests and by the hand-check listed in section 5a.
+
+The Module 10 black-box test (Worksheet Homework 10, 22 of 23 cases matched) stays as it is. Its open case is test 23 (a successful Gemini reply), postponed until a real API key is available.

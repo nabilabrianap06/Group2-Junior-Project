@@ -12,7 +12,8 @@ You can log usage by hand, or send prompts to Google Gemini and let the app coun
 | Windows 10 or 11 (64-bit) | The package includes .NET, so you do **not** need to install the .NET SDK or runtime. |
 | PostgreSQL 14 or newer | Download from <https://www.postgresql.org/download/windows/>. Remember the password you give the `postgres` user during installation. |
 | Gemini API key (optional) | Only needed for the **Ask Gemini** page. Free from <https://aistudio.google.com/apikey>. |
-| A web browser | Chrome, Edge or Firefox. |
+| Microsoft Edge WebView2 Runtime | Shows the app window. It is already part of Windows 11 and of up-to-date Windows 10. If it is missing, OxyGenAI tells you and links to <https://developer.microsoft.com/microsoft-edge/webview2/>. |
+| A web browser (optional) | Only if you prefer to use the app in a browser instead of its own window. |
 
 ---
 
@@ -36,8 +37,16 @@ You can log usage by hand, or send prompts to Google Gemini and let the app coun
 
 ## 3. Start and stop
 
-- **Start:** double-click **`Start OxyGenAI.bat`**. A console window opens, the database and its tables are created on the first start, and your browser opens at <http://localhost:5260>.
+**As a Windows app (recommended)**
+- **Start:** double-click **`OxyGenAI-Desktop.exe`**. The app opens in its own window; the database and its tables are created on the first start. If `oxygenai.settings.json` does not exist yet, the setup from section 2 runs first.
+- **Stop:** close the window. The program that runs in the background stops with it.
+- Links to other websites open in your default browser, not inside the window.
+
+**In a browser (alternative)**
+- **Start:** double-click **`Start OxyGenAI.bat`**. A console window opens and your browser opens at <http://localhost:5260>.
 - **Stop:** close the console window (or press `Ctrl+C` in it).
+
+Do not run both at the same time. The window version picks a free port by itself, so the "Port the app listens on" answer of the setup only applies to the browser version.
 
 ---
 
@@ -95,6 +104,9 @@ These figures are **estimates, not measurements**.
 
 | Problem | Solution |
 | :--- | :--- |
+| A message box says *"OxyGenAI could not start"* | Read the lines in the box. Most often PostgreSQL is not running or the password is wrong: start the PostgreSQL service and run `Setup OxyGenAI.bat` again. |
+| A message box says the *WebView2 Runtime is not installed* | Install it from <https://developer.microsoft.com/microsoft-edge/webview2/> and start the app again. |
+| The window stays on *"Starting OxyGenAI…"* for more than a minute | The server is slow to start or blocked. Close the window and start again; if it repeats, use `Start OxyGenAI.bat` and read the console. |
 | Console shows *"Could not apply database migrations"* and stops | PostgreSQL is not running, or the password/port is wrong. Start the PostgreSQL service, then run `Setup OxyGenAI.bat` again. |
 | Console shows *"The PostgreSQL connection string is not set"* | `oxygenai.settings.json` is missing. Run `Setup OxyGenAI.bat`. |
 | *"Failed to bind to address … address already in use"* | Another program uses port 5260. Run the setup again and choose another port, e.g. `5280`. |
@@ -103,7 +115,7 @@ These figures are **estimates, not measurements**.
 | Ask Gemini says the API key is not set | Run the setup, paste your key, and restart OxyGenAI. |
 | *"The Gemini API key was rejected"* | The key is wrong or was deleted. Create a new key in Google AI Studio and run the setup again. |
 | *"Gemini rate limit or quota reached"* | The free tier allows a limited number of requests per minute. Wait a minute and try again. |
-| Windows SmartScreen warns about `OxyGenAI.exe` | The program is not code-signed. Click **More info → Run anyway**. |
+| Windows SmartScreen warns about `OxyGenAI-Desktop.exe` or `OxyGenAI.exe` | The programs are not code-signed. Click **More info → Run anyway**. |
 | Browser does not open | Open <http://localhost:5260> yourself. |
 
 ---
@@ -117,7 +129,21 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Po
 dotnet run --project src/AIEnvironmentalTracker.Web --launch-profile http
 ```
 
-Build the installable package (writes `dist/OxyGenAI-win-x64.zip`):
+Run the Windows shell from source (build first: the shell starts the built web project in the background):
+
+```powershell
+dotnet build AIEnvironmentalTracker.slnx
+dotnet run --project src/AIEnvironmentalTracker.Desktop
+```
+
+Check that the shell, the server and WebView2 work together (no clicks needed; writes one result line and exits):
+
+```powershell
+src\AIEnvironmentalTracker.Desktopin\Debug
+et10.0-windows\OxyGenAI-Desktop.exe --check "C:\pathesult.txt"
+```
+
+Build the installable package (writes `dist/OxyGenAI-win-x64.zip` with `OxyGenAI-Desktop.exe` and `OxyGenAI.exe`, about 100 MB because each is self-contained):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File publish.ps1

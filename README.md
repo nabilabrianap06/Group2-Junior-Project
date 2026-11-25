@@ -23,6 +23,7 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 | **Authentication** | ASP.NET Core Identity (Role-based: User & Admin) |
 | **AI Integration** | Google Gemini REST API (`HttpClient`) |
 | **Frontend UI** | Blazor Components + Bootstrap |
+| **Windows app** | WinForms window hosting the app in Microsoft Edge WebView2 (`src/AIEnvironmentalTracker.Desktop`) |
 | **Tests** | xUnit (`tests/AIEnvironmentalTracker.Tests`) |
 
 ---
@@ -59,6 +60,7 @@ The application follows a **modular monolithic** layered architecture:
 src/AIEnvironmentalTracker.Domain/        # Plain C# domain model
 └── Models/              # EnvironmentalFactor, ImpactCalculator, CarbonFootprintReport,
                          # RecommendationEngine, TokenImpactEstimator, AIComparison, ...
+src/AIEnvironmentalTracker.Desktop/       # Windows app: WinForms window + WebView2, runs the Web app in the background
 src/AIEnvironmentalTracker.Web/           # Blazor Server app
 ├── Components/
 │   ├── Pages/           # Home (usage tracker), Dashboard, AskGemini, Compare, Admin
@@ -96,11 +98,11 @@ The usage tracker on the home page demonstrates **encapsulation**. `Environmenta
 1. Install PostgreSQL and make sure it is running.
 2. Extract `OxyGenAI-win-x64.zip` (built with `publish.ps1`, see below).
 3. Double-click `Setup OxyGenAI.bat` and enter your PostgreSQL password and, optionally, your Gemini API key. They are saved in `oxygenai.settings.json` next to `OxyGenAI.exe`, which is never committed.
-4. Double-click `Start OxyGenAI.bat`. The database is created on first start and the browser opens at `http://localhost:5260`.
+4. Double-click **`OxyGenAI-Desktop.exe`**. OxyGenAI opens in its own Windows window; the database is created on first start. (It needs the Microsoft Edge WebView2 Runtime, which Windows 11 already has.) Alternatively, `Start OxyGenAI.bat` runs the same app and opens it in your browser at `http://localhost:5260`.
 
 The full user guide, with troubleshooting, is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
-To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish.ps1`. It writes a self-contained `dist/OxyGenAI-win-x64.zip`.
+To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish.ps1`. It writes a self-contained `dist/OxyGenAI-win-x64.zip` (about 100 MB) with `OxyGenAI-Desktop.exe` (the window) and `OxyGenAI.exe` (the server it starts in the background).
 
 ### Run locally
 
@@ -128,5 +130,12 @@ dotnet user-secrets set "Admin:Email" "you@example.com" --project src/AIEnvironm
 ```
 
 Run the tests with `dotnet test AIEnvironmentalTracker.slnx`.
+
+To run the Windows window from source, build the solution first (the window starts the built web project in the background), then:
+
+```powershell
+dotnet build AIEnvironmentalTracker.slnx
+dotnet run --project src/AIEnvironmentalTracker.Desktop
+```
 
 If the Gemini key is missing, the Ask Gemini page explains how to set it. Network errors, rejected keys and rate limits appear as messages, and the app keeps running.

@@ -7,7 +7,7 @@ _Snapshot: 2026-11-25._
 ## 1. Context and requirements
 
 - Estimate the environmental impact (energy, CO₂, water) of generative-AI usage per interaction.
-- Course requirement: **C# codebase; the output is a Windows application**. Blazor is allowed.
+- Course requirement: **C# codebase; the output is a Windows application**. Blazor is allowed. The final result is this Windows application; the app is not deployed to a web host.
 - Roles: registered user (tracks own usage) and admin (manages accounts, sees platform totals).
 - Constraints: small team, short deadline, free-tier services only.
 
@@ -15,8 +15,8 @@ _Snapshot: 2026-11-25._
 
 ```mermaid
 flowchart LR
-    subgraph Client
-        B[Browser or WebView2 window]
+    subgraph "OxyGenAI-Desktop.exe  (WinForms, .NET 10)"
+        B[WebView2 window]
     end
     subgraph "OxyGenAI.exe  (ASP.NET Core, .NET 10)"
         W[Blazor Server UI<br/>Components/Pages]
@@ -28,7 +28,7 @@ flowchart LR
     G[(Google Gemini REST API)]
     P[(PostgreSQL<br/>local or Neon)]
 
-    B <-->|HTTP + SignalR| W
+    B <-->|HTTP + SignalR on 127.0.0.1| W
     W --> S
     W --> I
     S --> D
@@ -44,6 +44,7 @@ flowchart LR
 | :--- | :--- |
 | `src/AIEnvironmentalTracker.Domain` | Plain C# library: `EnvironmentalFactor`, `ImpactCalculator`, `CarbonFootprintReport`, `RecommendationEngine`, `TokenImpactEstimator`, plus UML-derived classes (`User`, `Admin`, `RegisteredUser`, `AIComparison`, `AIUsageLog`). |
 | `src/AIEnvironmentalTracker.Web` | Blazor Server app: pages, services, Identity, EF Core, migrations. |
+| `src/AIEnvironmentalTracker.Desktop` | The Windows app: a WinForms window with WebView2 that starts the Web app in the background (see section 3.1). |
 | `packaging/`, `publish.ps1` | Build of the self-contained Windows package and its setup scripts. |
 | `tests/AIEnvironmentalTracker.Tests` | xUnit tests on an in-memory database (no PostgreSQL needed). |
 | `w7junpro/` (separate branch) | Week-7 WinForms lab project; not part of the main app. |
@@ -57,6 +58,24 @@ flowchart LR
 | `Components/Usage` | Reusable parts: summary card, recommendations, recent table |
 | `Services` | `UsageTrackingService`, `AdminService`, `GeminiService`, `AskLimiter`, `ModelComparisonService`, `BrowserTimeService`, `UserMessages` |
 | `Data` | `ApplicationDbContext`, `ApplicationUser`, `UsageRecord`, migrations |
+
+### Windows shell (`OxyGenAI-Desktop.exe`)
+
+The shell does not contain any application logic. It starts the existing web app as a hidden process and displays it, so the Blazor code is the same whether it runs in a window or in a browser.
+
+| Step | What happens |
+| :--- | :--- |
+| 1. Locate | `ServerLocator`: `OxyGenAI.exe` next to the shell (installed package), otherwise the newest build of the web project found by walking up from the shell (source tree, `Development` environment so that user-secrets work). `OXYGENAI_SERVER` can name another executable. |
+| 2. Settings | Installed package without `oxygenai.settings.json` (and without the connection-string variable): the shell runs `Setup OxyGenAI.bat` once and waits. |
+| 3. Start | `ServerProcess` picks a free loopback port and starts the server hidden with `--Kestrel:Endpoints:Http:Url=http://127.0.0.1:<port>` and `--OpenBrowser=false`. Command-line values win over the settings file, so the server listens only on that port and does not open a browser. |
+| 4. Wait | It polls the address until any HTTP answer arrives (a redirect to the login page counts), for at most 90 seconds. If the server exits first, the last lines of its output (without stack frames) are shown in a message box. |
+| 5. Show | WebView2 (Evergreen runtime, data folder in `%LOCALAPPDATA%\OxyGenAI\WebView2`) loads the address. The window title follows the page title. |
+| 6. Contain | Only our own address (`127.0.0.1` or `localhost`, our port) may load in the window. Other http(s) links open in the default browser; other schemes are ignored. Developer tools are off. |
+| 7. Stop | Closing the window ends the server. A Windows job object (kill on close) also ends it if the shell crashes, so no server is left holding the port. |
+
+Diagnostic: `OxyGenAI-Desktop.exe --check <file>` runs steps 1 to 5 without user interaction, writes `OK|<page title>|<address>` or `FAIL|<reason>` to the file and exits with code 0 or 1.
+
+Limits: it needs the WebView2 runtime (part of Windows 11); the package holds two self-contained programs (about 100 MB zipped); the shell does not bundle PostgreSQL.
 
 ## 3. Data model
 
@@ -172,18 +191,19 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 - **Decision:** use Google's own accounting for Gemini, and revisit EcoLogits if open-weight models are added.
 - **Consequences:** results apply to Gemini text prompts only.
 
-### ADR-007 – Deliver as a Windows app by hosting the web app in a WinForms shell (proposed)
-- **Status:** proposed; awaiting confirmation of the requirement and the work.
+### ADR-007 – Deliver as a Windows app by hosting the web app in a WinForms shell
+- **Status:** accepted and implemented (`src/AIEnvironmentalTracker.Desktop`). The lecturer has not been asked yet; the choice follows the stated requirement (C# basis, Windows application output, Blazor allowed).
 - **Context:** the requirement is a C# codebase with a Windows application as output; Blazor is allowed. Today the package is a console program that opens the default browser.
 - **Options:** (A) keep the current package; (B) a WinForms or WPF window hosting the app in WebView2; (C) .NET MAUI Blazor Hybrid.
 - **Decision:** B, because it reuses all Blazor code and gives a real window. C needs a larger rewrite of authentication and hosting.
-- **Consequences:** a new small project; the process-scanning feature (`AIUsageLog`) also becomes meaningful there.
+- **Implementation note:** the shell runs the server as a separate hidden process instead of hosting it inside its own process. That leaves the tested web project unchanged and keeps the browser-based start (`Start OxyGenAI.bat`) working. The price is two executables.
+- **Consequences:** a new small project and a second program in the package; the process-scanning feature (`AIUsageLog`) can now be built into the shell later, where it makes sense.
 
-### ADR-008 – No Vercel deployment
-- **Status:** accepted.
+### ADR-008 – No web deployment (Vercel or any other host)
+- **Status:** accepted. The final result is the Windows application, so nothing is deployed.
 - **Context:** Vercel has no .NET runtime, and Blazor Server needs long-lived connections.
-- **Decision:** distribute the Windows package. If a hosted demo is needed, use a Docker-capable host with the existing PostgreSQL database.
-- **Consequences:** no public URL by default.
+- **Decision:** distribute the Windows package (zip). Hosting is not planned; should it ever be needed, a Docker-capable host with the existing PostgreSQL database would work, Vercel would not.
+- **Consequences:** no public URL; users run the app on their own PC with their own PostgreSQL.
 
 ### ADR-009 – First admin through configuration
 - **Status:** accepted for the MVP.
@@ -212,7 +232,7 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 
 ## 8. Open questions
 
-1. Does the lecturer accept the packaged exe (browser) or require a native window?
+1. Confirm with the lecturer that a WinForms window hosting the Blazor app (WebView2) meets "C# basis, Windows application output".
 2. Re-test the Gemini models that returned 503 and offer them when stable.
 3. Is there a published or measured per-model energy source we can cite (needed before claiming differences per token)?
 4. Keep or remove the design-only Domain user classes (`User`, `Admin`, `RegisteredUser`)? They are part of the UML and the worksheets, so they are kept for now.

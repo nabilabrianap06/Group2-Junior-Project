@@ -1,6 +1,7 @@
 # Builds the installable package: dist/OxyGenAI (folder) and dist/OxyGenAI-win-x64.zip.
 # The package is self-contained: the target PC does not need the .NET SDK or runtime, only PostgreSQL.
 #   powershell -ExecutionPolicy Bypass -File publish.ps1
+# Contents: OxyGenAI-Desktop.exe (Windows app window), OxyGenAI.exe (web server it runs), setup and start scripts.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $out  = Join-Path $root 'dist\OxyGenAI'
@@ -13,8 +14,16 @@ dotnet publish (Join-Path $root 'src\AIEnvironmentalTracker.Web\AIEnvironmentalT
     -c Release -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
     -p:OxyGenAIPackage=true -p:DebugType=None -o $out
-if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed (web server)' }
 
+# The Windows shell: OxyGenAI-Desktop.exe starts OxyGenAI.exe (same folder) in the background and shows it in its own window.
+dotnet publish (Join-Path $root 'src\AIEnvironmentalTracker.Desktop\AIEnvironmentalTracker.Desktop.csproj') `
+    -c Release -r win-x64 --self-contained true `
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:DebugType=None -o $out
+if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed (desktop shell)' }
+
+Remove-Item (Join-Path $out 'Microsoft.Web.WebView2.*.xml') -ErrorAction SilentlyContinue   # NuGet documentation files
 Copy-Item (Join-Path $root 'packaging\*') $out -Force
 Copy-Item (Join-Path $root 'docs\USER_GUIDE.md') $out -Force
 # Never ship a settings file that holds someone's password or key.
