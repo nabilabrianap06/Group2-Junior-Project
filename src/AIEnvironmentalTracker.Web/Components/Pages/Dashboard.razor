@@ -1,0 +1,163 @@
+@page "/dashboard"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UsageTrackingService UsageTrackingService
+@inject BrowserTimeService BrowserTimeService
+
+<PageTitle>OxyGenAI Dashboard</PageTitle>
+
+<h1>Dashboard</h1>
+<p>Your environmental impact over time. Times follow your browser's time zone.</p>
+
+<div class="btn-group mb-3" role="group" aria-label="Period">
+    @foreach (var option in Enum.GetValues<TrendPeriod>())
+    {
+        <button type="button" class="btn @(option == period ? "btn-primary" : "btn-outline-primary")"
+                @onclick="() => ChangePeriodAsync(option)" disabled="@loading">
+            @option
+        </button>
+    }
+</div>
+
+@if (error is not null)
+{
+    <p role="alert" class="text-danger">@error</p>
+}
+else if (trend is null)
+{
+    <p>Loading…</p>
+}
+else if (trend.Points.All(point => point.Queries == 0))
+{
+    <p class="text-muted">No usage in this period yet. Record some on the Usage tracker or Ask Gemini page.</p>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5">@PeriodTitle</h2>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Period</th><th class="text-end">Queries</th><th class="text-end">Water (mL)</th>
+                            <th class="text-end">CO₂ (g)</th><th class="text-end">Energy (Wh)</th><th style="width:30%">CO₂</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var point in trend.Points)
+                        {
+                            <tr>
+                                <td>@point.Label</td>
+                                <td class="text-end">@point.Queries.ToString("#,0")</td>
+                                <td class="text-end">@Format(point.Water)</td>
+                                <td class="text-end">@Format(point.Co2)</td>
+                                <td class="text-end">@Format(point.Energy)</td>
+                                <td>
+                                    <div class="progress" style="height: 0.9rem;" role="img" aria-label="CO2 share of the highest period">
+                                        <div class="progress-bar bg-success" style="width: @BarWidth(point.Co2)%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5">By AI model</h2>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Model</th><th class="text-end">Queries</th><th class="text-end">Water (mL)</th><th class="text-end">CO₂ (g)</th><th class="text-end">Energy (Wh)</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var model in trend.Models)
+                        {
+                            <tr>
+                                <td>@model.ModelName</td>
+                                <td class="text-end">@model.Queries.ToString("#,0")</td>
+                                <td class="text-end">@Format(model.Water)</td>
+                                <td class="text-end">@Format(model.Co2)</td>
+                                <td class="text-end">@Format(model.Energy)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string? userId;
+    private TrendPeriod period = TrendPeriod.Daily;
+    private UsageTrend? trend;
+    private string? error;
+    private bool loading;
+
+    private string PeriodTitle => period switch
+    {
+        TrendPeriod.Daily => "Last 14 days",
+        TrendPeriod.Weekly => "Last 12 weeks",
+        _ => "Last 12 months"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    }
+
+    // The browser time zone needs JS interop, which is only available after the first render.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || userId is null) return;
+        await BrowserTimeService.EnsureLoadedAsync();
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task ChangePeriodAsync(TrendPeriod newPeriod)
+    {
+        period = newPeriod;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            trend = await UsageTrackingService.GetTrendAsync(userId!, period, TimeZoneForUser());
+        }
+        catch (Exception ex) when (ex is Microsoft.EntityFrameworkCore.DbUpdateException or InvalidOperationException or Npgsql.NpgsqlException)
+        {
+            error = "Could not load the dashboard. Please check the database connection.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private TimeZoneInfo TimeZoneForUser()
+        => BrowserTimeService.IsLoaded && TimeZoneInfo.TryFindSystemTimeZoneById(BrowserTimeService.ZoneId, out var zone)
+            ? zone
+            : TimeZoneInfo.Local;
+
+    private double BarWidth(decimal co2)
+    {
+        var max = trend!.Points.Max(point => point.Co2);
+        return max <= 0 ? 0 : (double)(co2 / max) * 100;
+    }
+
+    private static string Format(decimal value) => value.ToString("#,0.####");
+}

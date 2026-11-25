@@ -54,6 +54,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddScoped<UsageTrackingService>();
 builder.Services.AddScoped<BrowserTimeService>();
+builder.Services.AddScoped<AdminService>();
 
 // Gemini web API: key from user-secrets "Gemini:ApiKey" or environment variable Gemini__ApiKey.
 builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));
@@ -65,6 +66,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
@@ -88,6 +90,19 @@ using (var scope = app.Services.CreateScope())
             "connection string exists, and the username and password are correct.");
         throw;
     }
+}
+
+// Make sure the Admin role exists and promote the account named in "Admin:Email" (if it is registered).
+// The setting comes from user-secrets, the environment variable Admin__Email, or oxygenai.settings.json.
+using (var scope = app.Services.CreateScope())
+{
+    var admin = scope.ServiceProvider.GetRequiredService<AdminService>();
+    await admin.EnsureRoleAsync();
+    var adminEmail = app.Configuration[AdminService.AdminEmailSetting];
+    if (await admin.PromoteConfiguredAdminAsync(adminEmail))
+        app.Logger.LogInformation("{Email} was made an admin.", adminEmail);
+    else if (!string.IsNullOrWhiteSpace(adminEmail))
+        app.Logger.LogInformation("Admin:Email is set. {Email} becomes an admin when it registers (or is already one).", adminEmail);
 }
 
 // Configure the HTTP request pipeline.
