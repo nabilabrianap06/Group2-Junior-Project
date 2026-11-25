@@ -3,4 +3,7 @@
     <Project Path="src/AIEnvironmentalTracker.Domain/AIEnvironmentalTracker.Domain.csproj" />
     <Project Path="src/AIEnvironmentalTracker.Web/AIEnvironmentalTracker.Web.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AIEnvironmentalTracker.Tests/AIEnvironmentalTracker.Tests.csproj" />
+  </Folder>
 </Solution>

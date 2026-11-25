@@ -1,0 +1,178 @@
+@page "/compare"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject GeminiService Gemini
+@inject ModelComparisonService Comparison
+@inject AskLimiter Limiter
+
+<PageTitle>Compare models · OxyGenAI</PageTitle>
+
+<h1>Compare models</h1>
+<p>
+    Send the same prompt to two or more Gemini models and compare how many tokens each one needs and the
+    estimated environmental impact. Every answer is a real request: it counts towards your daily allowance and is
+    saved to your usage history.
+</p>
+
+@if (!Gemini.IsConfigured)
+{
+    <div class="alert alert-warning" role="alert">@GeminiService.MissingKeyMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form @onsubmit="CompareAsync" @onsubmit:preventDefault>
+            <fieldset class="mb-3" disabled="@running">
+                <legend class="form-label fs-6">Models (choose at least @ModelComparisonService.MinModels)</legend>
+                @foreach (var model in Gemini.AvailableModels)
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="m-@model" checked="@selected.Contains(model)"
+                               @onchange="e => Toggle(model, e.Value is true)" />
+                        <label class="form-check-label" for="m-@model">@model</label>
+                    </div>
+                }
+            </fieldset>
+
+            <label class="form-label" for="prompt">Your prompt</label>
+            <textarea id="prompt" class="form-control" rows="4" maxlength="@Gemini.MaxPromptCharacters"
+                      @bind="prompt" @bind:event="oninput" disabled="@running"></textarea>
+            <button class="btn btn-primary mt-3" type="submit"
+                    disabled="@(running || string.IsNullOrWhiteSpace(prompt) || selected.Count < ModelComparisonService.MinModels || !Gemini.IsConfigured)">
+                @(running ? "Waiting for the models…" : "Compare")
+            </button>
+        </form>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger mt-3 mb-0" role="alert">@error</div>
+        }
+
+        @if (rows is not null)
+        {
+            <h2 class="h6 mt-4">Result (lowest estimated impact first)</h2>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>Model</th><th class="text-end">Prompt tokens</th><th class="text-end">Answer tokens</th>
+                            <th class="text-end">Thinking tokens</th><th class="text-end">Total tokens</th>
+                            <th class="text-end">Energy (Wh)</th><th class="text-end">CO₂ (g)</th><th class="text-end">Water (mL)</th>
+                            <th class="text-end">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in rows)
+                        {
+                            @if (row.Reply is null)
+                            {
+                                <tr>
+                                    <td>–</td><td>@row.Model</td>
+                                    <td colspan="8" class="text-danger">@row.Error</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td>@row.Rank</td><td>@row.Model</td>
+                                    <td class="text-end">@row.Reply.PromptTokens</td>
+                                    <td class="text-end">@row.Reply.CandidateTokens</td>
+                                    <td class="text-end">@row.ThinkingTokens</td>
+                                    <td class="text-end">@row.Reply.TotalTokens</td>
+                                    <td class="text-end">@row.Impact!.EnergyWh.ToString("0.######")</td>
+                                    <td class="text-end">@row.Impact.Co2Grams.ToString("0.######")</td>
+                                    <td class="text-end">@row.Impact.WaterMl.ToString("0.######")</td>
+                                    <td class="text-end">@row.EfficiencyScore?.ToString("0.00")</td>
+                                </tr>
+                                @if (row.SaveError is not null)
+                                {
+                                    <tr><td></td><td colspan="9" class="text-warning small">@row.Model: @row.SaveError</td></tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @foreach (var row in rows.Where(r => r.Reply is not null))
+            {
+                <details class="mb-2">
+                    <summary>Answer of @row.Model</summary>
+                    <div class="border rounded p-3 bg-body-tertiary mt-2" style="white-space: pre-wrap">@row.Reply!.Text</div>
+                </details>
+            }
+        }
+    </div>
+</div>
+
+<div class="alert alert-info small">
+    <strong>How to read this.</strong>
+    Google publishes one energy figure for a Gemini text prompt, not one per model, so every model is given the same
+    energy per token. The ranking therefore shows which model needed fewer tokens (including internal thinking tokens)
+    for this prompt, not which model is more efficient per token. The score is 100 ÷ (1 + weighted impact) from the
+    project's comparison class: higher is better. These are estimates, not measurements.
+</div>
+
+@code {
+    private string? userId;
+    private string prompt = string.Empty;
+    private readonly HashSet<string> selected = new(StringComparer.OrdinalIgnoreCase);
+    private bool running;
+    private string? error;
+    private IReadOnlyList<ModelComparisonRow>? rows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        foreach (var model in Gemini.AvailableModels.Take(ModelComparisonService.MinModels))
+            selected.Add(model);
+    }
+
+    private void Toggle(string model, bool isChecked)
+    {
+        if (isChecked) selected.Add(model); else selected.Remove(model);
+    }
+
+    private async Task CompareAsync()
+    {
+        if (userId is null || running || string.IsNullOrWhiteSpace(prompt)) return;
+
+        running = true;
+        error = null;
+        rows = null;
+        try
+        {
+            if (prompt.Length > Gemini.MaxPromptCharacters)
+            {
+                error = $"The prompt is too long. The limit is {Gemini.MaxPromptCharacters:N0} characters.";
+                return;
+            }
+            if (selected.Count < ModelComparisonService.MinModels)
+            {
+                error = $"Choose at least {ModelComparisonService.MinModels} models.";
+                return;
+            }
+
+            var allowance = Limiter.TryAcquire(userId, selected.Count);
+            if (!allowance.Allowed)
+            {
+                error = allowance.Message;
+                return;
+            }
+
+            rows = await Comparison.CompareAsync(userId, prompt, selected.ToList());
+        }
+        catch (ArgumentException ex)
+        {
+            error = UserMessages.From(ex);
+        }
+        finally
+        {
+            running = false;
+        }
+    }
+}

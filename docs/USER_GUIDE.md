@@ -66,6 +66,27 @@ You can log usage by hand, or send prompts to Google Gemini and let the app coun
    (method and sources: Google, arXiv:2508.15734; the 500-token reference is our own assumption)  
    and saves it to your usage history automatically, with recommendations.
 
+You can pick the Gemini **model** in the list above the prompt. Only the models offered in the list can be used.
+
+### 4.4 Compare models
+1. Open **Compare models**.
+2. Tick two or more models, type a prompt and click **Compare**.
+3. The same prompt is sent to each model. The table lists the prompt, answer and thinking tokens and the estimated energy, CO₂ and water, lowest impact first. Open "Answer of …" to read each reply.
+4. Every answer is a real request: it is saved to your usage history and counts towards your daily allowance.
+
+All models use the same energy per token (Google publishes one figure for Gemini, not one per model), so the ranking shows which model needed fewer tokens for your prompt.
+
+### 4.5 Dashboard
+Open **Dashboard** and choose **Daily** (14 days), **Weekly** (12 weeks) or **Monthly** (12 months) to see your queries, water, CO₂ and energy over time, and a table per AI model.
+
+### 4.6 Limits
+- A prompt can have at most 4,000 characters.
+- Each user can send 30 Gemini requests per day (resets at midnight UTC), with a pause of a few seconds between requests. A comparison of three models uses three requests.
+- Google's free tier also has its own limits for all users together; when it is reached you see the message "Gemini rate limit or quota reached".
+
+### 4.7 Admin panel (administrators only)
+Administrators see **Admin** in the menu. It shows platform-wide totals and lets you add accounts, change an email, suspend or reactivate an account, and grant or remove the Admin role. Suspended accounts cannot sign in, but their history is kept. You cannot suspend yourself, remove your own admin role, or remove the last active admin.
+
 These figures are **estimates, not measurements**.
 
 ---
@@ -77,6 +98,8 @@ These figures are **estimates, not measurements**.
 | Console shows *"Could not apply database migrations"* and stops | PostgreSQL is not running, or the password/port is wrong. Start the PostgreSQL service, then run `Setup OxyGenAI.bat` again. |
 | Console shows *"The PostgreSQL connection string is not set"* | `oxygenai.settings.json` is missing. Run `Setup OxyGenAI.bat`. |
 | *"Failed to bind to address … address already in use"* | Another program uses port 5260. Run the setup again and choose another port, e.g. `5280`. |
+| "You have used your … Gemini requests for today" or "Please wait … second(s)" | You reached your own daily allowance or sent requests too fast. Wait, or ask an administrator to raise `AskLimits:DailyRequestsPerUser`. |
+| A model shows "temporarily unavailable" in Compare models | Google's server is busy (HTTP 503). Try again in a moment; the other models still answer. |
 | Ask Gemini says the API key is not set | Run the setup, paste your key, and restart OxyGenAI. |
 | *"The Gemini API key was rejected"* | The key is wrong or was deleted. Create a new key in Google AI Studio and run the setup again. |
 | *"Gemini rate limit or quota reached"* | The free tier allows a limited number of requests per minute. Wait a minute and try again. |

@@ -55,6 +55,12 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddScoped<UsageTrackingService>();
 builder.Services.AddScoped<BrowserTimeService>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<ModelComparisonService>();
+
+// Per-user allowance for Gemini requests (section "AskLimits"); counters are kept in memory.
+builder.Services.Configure<AskLimitOptions>(builder.Configuration.GetSection(AskLimitOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<AskLimiter>();
 
 // Gemini web API: key from user-secrets "Gemini:ApiKey" or environment variable Gemini__ApiKey.
 builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));

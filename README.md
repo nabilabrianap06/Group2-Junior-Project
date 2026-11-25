@@ -21,9 +21,9 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 | **Language** | C# |
 | **Database** | PostgreSQL + Entity Framework Core (Npgsql) |
 | **Authentication** | ASP.NET Core Identity (Role-based: User & Admin) |
-| **AI Integration** | Google.GenAI SDK (.NET) |
-| **Proxy** | YARP (Yet Another Reverse Proxy) |
+| **AI Integration** | Google Gemini REST API (`HttpClient`) |
 | **Frontend UI** | Blazor Components + Bootstrap |
+| **Tests** | xUnit (`tests/AIEnvironmentalTracker.Tests`) |
 
 ---
 
@@ -56,15 +56,24 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 The application follows a **modular monolithic** layered architecture:
 
 ```text
-AIEnvironmentalTracker.Web/
-├── Components/          # Blazor UI (Pages, Layouts, Dashboard)
-├── Data/                # EF Core DbContext & Migrations
-├── Models/              # Database Entities (AIUsageLog, EnvironmentalFactor)
-├── Services/            # Business Logic
-│   ├── GeminiService.cs           # API Communication
-│   ├── ImpactCalculator.cs        # Environmental Estimation Logic
-│   └── UsageTrackingService.cs    # Data Persistence
-└── Program.cs           # Entry point & Dependency Injection
+src/AIEnvironmentalTracker.Domain/        # Plain C# domain model
+└── Models/              # EnvironmentalFactor, ImpactCalculator, CarbonFootprintReport,
+                         # RecommendationEngine, TokenImpactEstimator, AIComparison, ...
+src/AIEnvironmentalTracker.Web/           # Blazor Server app
+├── Components/
+│   ├── Pages/           # Home (usage tracker), Dashboard, AskGemini, Compare, Admin
+│   ├── Usage/           # Reusable usage components
+│   └── Account/         # Identity pages
+├── Data/                # EF Core DbContext, entities & migrations
+├── Services/            # Business logic
+│   ├── GeminiService.cs            # Gemini REST calls, model allow-list
+│   ├── AskLimiter.cs               # Per-user daily allowance for Gemini requests
+│   ├── ModelComparisonService.cs   # Same prompt to several models, ranked
+│   ├── UsageTrackingService.cs     # Persistence, totals, daily/weekly/monthly trends
+│   └── AdminService.cs             # Accounts, roles, platform totals
+└── Program.cs           # Entry point & dependency injection
+tests/AIEnvironmentalTracker.Tests/       # xUnit tests (in-memory database, no PostgreSQL needed)
+docs/                    # User guide, progress, design decisions
 ```
 
 ---
@@ -79,7 +88,7 @@ The usage tracker on the home page demonstrates **encapsulation**. `Environmenta
 ## Module 10: Minimum Viable Product
 
 - **Usage tracker** (home page): manual records go through `EnvironmentalFactor` and `ImpactCalculator`. After saving, `RecommendationEngine` shows advice for that record. A summary shows your total queries, water (mL), CO₂ (g) and energy (Wh), held in a `CarbonFootprintReport`. Times are shown in your browser's time zone.
-- **Ask Gemini** (signed-in users only): `GeminiService` calls the Gemini REST API (`generateContent`, default model `gemini-2.5-flash`) and reads `usageMetadata` from the reply. `TokenImpactEstimator` turns the total token count into an `EnvironmentalFactor`. It follows Google's accounting chain (energy → carbon → water, [arXiv:2508.15734](https://arxiv.org/abs/2508.15734)) for the median Gemini Apps text prompt (May 2025: 0.24 Wh, 0.03 gCO₂e, 0.26 mL water), assuming that median prompt is 500 tokens and scaling energy linearly with total tokens. Sources, equations and limitations are at the top of `TokenImpactEstimator.cs`. The result is saved through `UsageTrackingService`. These figures are estimates, not measurements.
+- **Ask Gemini** (signed-in users only): `GeminiService` calls the Gemini REST API (`generateContent`) and reads `usageMetadata` from the reply. The model is chosen from `Gemini:AllowedModels` (default `Gemini:Model`, currently `gemini-3.5-flash-lite`); **Compare models** sends one prompt to several of them. `AskLimits` caps the requests per user per day. `TokenImpactEstimator` turns the total token count into an `EnvironmentalFactor`. It follows Google's accounting chain (energy → carbon → water, [arXiv:2508.15734](https://arxiv.org/abs/2508.15734)) for the median Gemini Apps text prompt (May 2025: 0.24 Wh, 0.03 gCO₂e, 0.26 mL water), assuming that median prompt is 500 tokens and scaling energy linearly with total tokens. Sources, equations and limitations are at the top of `TokenImpactEstimator.cs`. The result is saved through `UsageTrackingService`. These figures are estimates, not measurements.
 - Registration no longer needs email confirmation, and database migrations are applied automatically on startup.
 
 ### Install the packaged app (no .NET SDK needed)
@@ -110,6 +119,14 @@ To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish
    dotnet run --project src/AIEnvironmentalTracker.Web --launch-profile http
    ```
 
-4. Open `http://localhost:5260` and register; you are signed in right away. Use **Usage tracker** to enter manual estimates and **Ask Gemini** to send live prompts.
+4. Open `http://localhost:5260` and register; you are signed in right away. Use **Usage tracker** to enter manual estimates, **Ask Gemini** to send live prompts, **Compare models** to compare models, and **Dashboard** for trends.
+
+To get an admin account, set the email before registering (the account with that email becomes an admin when it registers):
+
+```powershell
+dotnet user-secrets set "Admin:Email" "you@example.com" --project src/AIEnvironmentalTracker.Web
+```
+
+Run the tests with `dotnet test AIEnvironmentalTracker.slnx`.
 
 If the Gemini key is missing, the Ask Gemini page explains how to set it. Network errors, rejected keys and rate limits appear as messages, and the app keeps running.

@@ -45,16 +45,17 @@ flowchart LR
 | `src/AIEnvironmentalTracker.Domain` | Plain C# library: `EnvironmentalFactor`, `ImpactCalculator`, `CarbonFootprintReport`, `RecommendationEngine`, `TokenImpactEstimator`, plus UML-derived classes (`User`, `Admin`, `RegisteredUser`, `AIComparison`, `AIUsageLog`). |
 | `src/AIEnvironmentalTracker.Web` | Blazor Server app: pages, services, Identity, EF Core, migrations. |
 | `packaging/`, `publish.ps1` | Build of the self-contained Windows package and its setup scripts. |
+| `tests/AIEnvironmentalTracker.Tests` | xUnit tests on an in-memory database (no PostgreSQL needed). |
 | `w7junpro/` (separate branch) | Week-7 WinForms lab project; not part of the main app. |
 
 ### Web project
 
 | Folder | Content |
 | :--- | :--- |
-| `Components/Pages` | `Home` (usage tracker), `Dashboard`, `AskGemini`, `Admin` |
+| `Components/Pages` | `Home` (usage tracker), `Dashboard`, `AskGemini`, `Compare`, `Admin` |
 | `Components/Account` | Identity pages (login, register, manage) from the template |
 | `Components/Usage` | Reusable parts: summary card, recommendations, recent table |
-| `Services` | `UsageTrackingService`, `AdminService`, `GeminiService`, `BrowserTimeService`, `UserMessages` |
+| `Services` | `UsageTrackingService`, `AdminService`, `GeminiService`, `AskLimiter`, `ModelComparisonService`, `BrowserTimeService`, `UserMessages` |
 | `Data` | `ApplicationDbContext`, `ApplicationUser`, `UsageRecord`, migrations |
 
 ## 3. Data model
@@ -122,7 +123,10 @@ Water (mL)   = (E_total - E_overhead) x 1.15 L/kWh
 | :--- | :--- | :--- |
 | `ConnectionStrings:DefaultConnection` | user-secrets, env `ConnectionStrings__DefaultConnection`, or `oxygenai.settings.json` | Required. Npgsql format, `SSL Mode=Require` for Neon. |
 | `Gemini:ApiKey` | user-secrets, env `Gemini__ApiKey`, or settings file | Optional; Ask Gemini is off without it. |
-| `Gemini:Model` | `appsettings.json` or env `Gemini__Model` | Default in the repository: `gemini-2.5-flash`. |
+| `Gemini:Model` | `appsettings.json` or env `Gemini__Model` | Default model; in the repository `gemini-3.5-flash-lite`. |
+| `Gemini:AllowedModels` | `appsettings.json` | List of model ids a user may pick; the default is always allowed. |
+| `Gemini:MaxPromptCharacters` | `appsettings.json` | Longest accepted prompt (4,000). |
+| `AskLimits:DailyRequestsPerUser`, `AskLimits:MinSecondsBetweenRequests` | `appsettings.json` | Per-user allowance (30 per UTC day) and pause (3 s); 0 turns a limit off. |
 | `Admin:Email` | user-secrets, env `Admin__Email`, or settings file | The account with this email becomes an admin at startup and at registration. |
 | `OpenBrowser` | settings file | Packaged app opens the browser after start. |
 
@@ -157,10 +161,10 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 - **Consequences:** history is preserved; a suspended user's open session can last up to the revalidation interval (30 minutes).
 
 ### ADR-005 – Hard-coded, cited impact factors (no third-party impact API)
-- **Status:** accepted for the estimator; per-model table proposed.
+- **Status:** accepted for the estimator. The planned per-tier model assumptions were **dropped** (see below).
 - **Context:** the Gemini API returns token counts and metadata but no energy, carbon or water data. A public calculator site offers an API through a marketplace (100 free requests per month) but does not disclose how it derives per-model numbers.
-- **Decision:** keep constants in our own code and database, with the source written next to each value; derive carbon and water from energy with Google's published chain. Planned: an `EnvironmentalFactor` table with a source column and per-tier model assumptions that are labelled as assumptions.
-- **Consequences:** transparent and offline; numbers are only as good as the cited paper; model comparison stays blocked until the table exists.
+- **Decision:** keep constants in our own code, with the source written next to each value; derive carbon and water from energy with Google's published chain. Every Gemini model gets the **same energy per token**. We do not invent per-tier multipliers: a price tier is a commercial price per token and says nothing reliable about energy, and if anything a larger model needs more energy per token, not less. A per-model figure is added only when a published or measured source exists.
+- **Consequences:** transparent and offline; numbers are only as good as the cited paper; models differ in the estimate only through the number of tokens they use for a prompt (including thinking tokens). The comparison page says so.
 
 ### ADR-006 – Google's method rather than EcoLogits
 - **Status:** accepted.
@@ -188,9 +192,27 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 
 ---
 
+### ADR-010 – Other LLM providers are future work
+- **Status:** deferred.
+- **Context:** several providers offer free tiers with an OpenAI-compatible API that also returns token counts (for example OpenRouter, Groq, a local Ollama). Free-tier limits change often and were not verified first-hand.
+- **Decision:** keep Gemini as the only provider for now. When added, use one adapter for OpenAI-compatible APIs (base URL, key, model) behind a small provider interface. Open-weight models have public parameter counts, so EcoLogits' parameter-based method could then be used for them (revisit ADR-006).
+- **Consequences:** no extra dependency or key now.
+
+### ADR-011 – Gemini model allow-list and per-user limits
+- **Status:** accepted.
+- **Context:** one API key serves all users and the free tier is small; models can be unavailable (HTTP 503/404).
+- **Decision:** `Gemini:AllowedModels` lists the ids a user may pick (default `gemini-3.5-flash-lite`; also `gemini-3.6-flash`, the two that answered a test call). `GeminiService` refuses any other id before calling Google. The prompt length is capped on the server (4,000 characters). `AskLimiter` gives each user a daily allowance (30 per UTC day) and a short pause between requests. The counters live in memory.
+- **Consequences:** a user cannot select an arbitrary or paid model; counters reset when the app restarts and are not shared across instances (acceptable for one local instance; use a database table if the app is ever hosted on several).
+
+### ADR-012 – Model comparison ranks by estimated impact of the tokens used
+- **Status:** accepted.
+- **Context:** the UML has `compareAIModels()`; there is no per-model energy data (ADR-005).
+- **Decision:** `ModelComparisonService` sends the same prompt to the chosen models, estimates the impact of each answer from its total tokens, ranks by estimated CO₂ (the Domain class `AIComparison` supplies the efficiency score), and saves each answer as usage because each one is a real request. A failing model is listed with its error and does not stop the others.
+- **Consequences:** the ranking shows which model needed fewer tokens for this prompt, which is a real and measurable difference, not a claim about energy per token.
+
 ## 8. Open questions
 
 1. Does the lecturer accept the packaged exe (browser) or require a native window?
-2. Which Gemini models should be offered, and which is the default?
-3. Do we need the per-model factor table and model comparison before the demo?
-4. Keep or remove the design-only Domain user classes?
+2. Re-test the Gemini models that returned 503 and offer them when stable.
+3. Is there a published or measured per-model energy source we can cite (needed before claiming differences per token)?
+4. Keep or remove the design-only Domain user classes (`User`, `Admin`, `RegisteredUser`)? They are part of the UML and the worksheets, so they are kept for now.
