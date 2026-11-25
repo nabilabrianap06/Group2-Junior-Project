@@ -60,7 +60,10 @@ You can log usage by hand, or send prompts to Google Gemini and let the app coun
 1. Open **Ask Gemini** (needs a Gemini API key, see section 2).
 2. Type a prompt and click **Send to Gemini**.
 3. The app calls the Google Gemini REST API, shows the reply, and reads the token counts from it. It estimates the impact as  
-   `impact = Google's median-prompt estimate × (total tokens ÷ 500)`  
+   `energy = 0.24 Wh × (total tokens ÷ 500)`, then  
+   `CO₂e = energy × 94 g/kWh + embodied (0.010 g × tokens ÷ 500)` and  
+   `water = (energy − overhead, PUE 1.09) × 1.15 L/kWh`  
+   (method and sources: Google, arXiv:2508.15734; the 500-token reference is our own assumption)  
    and saves it to your usage history automatically, with recommendations.
 
 These figures are **estimates, not measurements**.
