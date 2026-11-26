@@ -1,18 +1,45 @@
-@* Recommendations from RecommendationEngine for the record that was just saved. *@
+@* Recommendations from RecommendationEngine for the record that was just saved, one card per metric. *@
 
 @if (Items.Count > 0)
 {
-    <div class="alert alert-success mt-3 mb-0">
-        <h3 class="h6">Recommendations</h3>
-        <ul class="mb-0">
+    <section class="@(Bare ? "" : "ox-panel")" aria-labelledby="@headingId">
+        <h2 id="@headingId" class="@(Bare ? "h6 mb-2" : "")">Recommendations</h2>
+        @if (!string.IsNullOrEmpty(Context))
+        {
+            <p class="ox-note mt-1 mb-3">@Context</p>
+        }
+        <ul class="ox-recs">
             @foreach (var item in Items)
             {
-                <li><span class="badge text-bg-secondary me-2">@item.TargetMetric</span>@item.AdviceText</li>
+                var style = Style(item.TargetMetric);
+                <li class="@style.Css">
+                    <span class="ox-rec-icon"><Icon Name="@style.Icon" Size="18" Color="@style.Color" /></span>
+                    <div>
+                        <div class="ox-rec-title">@style.Label</div>
+                        <div class="ox-rec-text">@item.AdviceText</div>
+                    </div>
+                </li>
             }
         </ul>
-    </div>
+    </section>
 }
 
 @code {
     [Parameter] public IReadOnlyList<RecommendationEngine> Items { get; set; } = [];
+
+    /// <summary>Optional line under the heading, e.g. which record the advice is for.</summary>
+    [Parameter] public string? Context { get; set; }
+
+    /// <summary>Render without the card frame, inside another panel.</summary>
+    [Parameter] public bool Bare { get; set; }
+
+    private readonly string headingId = "recs-" + Guid.NewGuid().ToString("N")[..8];
+
+    private static (string Css, string Icon, string Color, string Label) Style(string metric) => metric switch
+    {
+        "Water" => ("ox-rec-water", "water", "#1D5FA8", "Water"),
+        "Energy" => ("ox-rec-energy", "energy", "#A84B05", "Energy"),
+        "CO2" => ("ox-rec-co2", "co2", "#3F4A45", "CO₂"),
+        _ => ("ox-rec-general", "leaf", "#0E6B4F", "Looking good")
+    };
 }

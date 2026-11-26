@@ -2,76 +2,44 @@
 
 @inject NavigationManager NavigationManager
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">OxyGenAI</a>
-    </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Usage tracker
-            </NavLink>
-        </div>
+<header class="ox-topbar">
+    <div class="ox-topbar-inner">
+        <a class="ox-home" href="" aria-label="OxyGenAI home">
+            <BrandMark />
+        </a>
 
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="dashboard">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Dashboard
+                <nav class="ox-nav" aria-label="Main">
+                    <NavLink class="ox-nav-link" href="" Match="NavLinkMatch.All">Usage tracker</NavLink>
+                    <NavLink class="ox-nav-link" href="dashboard">Dashboard</NavLink>
+                    <NavLink class="ox-nav-link" href="ask-gemini">Ask Gemini</NavLink>
+                    <NavLink class="ox-nav-link" href="compare">Compare models</NavLink>
+                    <AuthorizeView Roles="Admin" Context="adminContext">
+                        <NavLink class="ox-nav-link" href="admin">Admin</NavLink>
+                    </AuthorizeView>
+                </nav>
+                <div class="ox-account">
+                    <NavLink class="ox-user" href="Account/Manage" title="Manage your account">
+                        <span class="ox-avatar" aria-hidden="true">@Initial(context.User.Identity?.Name)</span>
+                        <span class="ox-user-name">@context.User.Identity?.Name</span>
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="ask-gemini">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Ask Gemini
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="compare">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Compare models
-                    </NavLink>
-                </div>
-                <AuthorizeView Roles="Admin" Context="adminContext">
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="admin">
-                            <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Admin
-                        </NavLink>
-                    </div>
-                </AuthorizeView>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </button>
+                        <button type="submit" class="ox-logout">Log out</button>
                     </form>
                 </div>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-                    </NavLink>
+                <div class="ox-account ox-account-guest">
+                    <NavLink class="ox-nav-link" href="Account/Login">Log in</NavLink>
+                    <NavLink class="ox-signup" href="Account/Register">Create account</NavLink>
                 </div>
             </NotAuthorized>
         </AuthorizeView>
-    </nav>
-</div>
+    </div>
+</header>
 
 @code {
     private string? currentUrl;
@@ -88,9 +56,11 @@
         StateHasChanged();
     }
 
+    private static string Initial(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : char.ToUpperInvariant(name.Trim()[0]).ToString();
+
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }
-

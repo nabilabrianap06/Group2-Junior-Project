@@ -1,0 +1,15 @@
+@* The OxyGenAI logo: a water drop on a green tile, plus the name. *@
+
+<span class="ox-brand">
+    <svg width="@Size" height="@Size" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect width="32" height="32" rx="8" fill="#0E6B4F"></rect>
+        <path d="M16 7c-4 5-7 8.5-7 12a7 7 0 0 0 14 0c0-3.5-3-7-7-12z" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"></path>
+        <path d="M13 20a3 3 0 0 0 3 3" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+    <span class="ox-brand-name" style="font-size: @(TextSize)px">OxyGenAI</span>
+</span>
+
+@code {
+    [Parameter] public int Size { get; set; } = 30;
+    [Parameter] public int TextSize { get; set; } = 20;
+}
