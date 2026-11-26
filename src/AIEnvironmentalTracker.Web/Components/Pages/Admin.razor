@@ -1,0 +1,217 @@
+@page "/admin"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminService.AdminRole)]
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AdminService AdminService
+
+<PageTitle>OxyGenAI Admin</PageTitle>
+
+<h1>Admin panel</h1>
+<p>Manage accounts and see usage across the whole platform. Accounts are suspended, never deleted, so usage history is kept.</p>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert @(messageOk ? "alert-success" : "alert-danger")" role="status">@message</div>
+}
+
+@if (totals is not null)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body"><div class="text-muted small">Users</div><div class="fs-4 fw-semibold">@totals.Users</div><div class="small text-muted">@totals.Admins admin, @totals.Suspended suspended</div></div></div></div>
+        <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body"><div class="text-muted small">Queries</div><div class="fs-4 fw-semibold">@totals.Queries.ToString("#,0")</div></div></div></div>
+        <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body"><div class="text-muted small">Water</div><div class="fs-4 fw-semibold">@Format(totals.Water) <span class="fs-6">mL</span></div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">CO₂</div><div class="fs-4 fw-semibold">@Format(totals.Co2) <span class="fs-6">g</span></div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Energy</div><div class="fs-4 fw-semibold">@Format(totals.Energy) <span class="fs-6">Wh</span></div></div></div></div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5">Usage by AI model (all users)</h2>
+            @if (totals.Models.Count == 0)
+            {
+                <p class="text-muted mb-0">No usage recorded yet.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead><tr><th>Model</th><th class="text-end">Queries</th><th class="text-end">Water (mL)</th><th class="text-end">CO₂ (g)</th><th class="text-end">Energy (Wh)</th></tr></thead>
+                        <tbody>
+                            @foreach (var model in totals.Models)
+                            {
+                                <tr>
+                                    <td>@model.ModelName</td>
+                                    <td class="text-end">@model.Queries.ToString("#,0")</td>
+                                    <td class="text-end">@Format(model.Water)</td>
+                                    <td class="text-end">@Format(model.Co2)</td>
+                                    <td class="text-end">@Format(model.Energy)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Add account</h2>
+        <form @onsubmit="AddUserAsync" @onsubmit:preventDefault>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label" for="newEmail">Email</label>
+                    <input id="newEmail" class="form-control" type="email" @bind="newEmail" maxlength="256" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="newPassword">Password</label>
+                    <input id="newPassword" class="form-control" type="password" @bind="newPassword" autocomplete="new-password" />
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check">
+                        <input id="newAdmin" class="form-check-input" type="checkbox" @bind="newIsAdmin" />
+                        <label class="form-check-label" for="newAdmin">Admin</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" type="submit" disabled="@busy">Add</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Accounts</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Queries</th><th class="text-end">CO₂ (g)</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>
+                                @if (editingId == user.Id)
+                                {
+                                    <div class="input-group input-group-sm">
+                                        <input class="form-control" type="email" @bind="editEmail" maxlength="256" aria-label="New email" />
+                                        <button class="btn btn-primary" type="button" @onclick="() => SaveEmailAsync(user.Id)" disabled="@busy">Save</button>
+                                        <button class="btn btn-outline-secondary" type="button" @onclick="CancelEdit">Cancel</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @user.Email
+                                    @if (user.Id == currentUserId) { <span class="badge text-bg-secondary ms-1">you</span> }
+                                }
+                            </td>
+                            <td>@(user.IsAdmin ? "Admin" : "User")</td>
+                            <td>@if (user.IsSuspended) { <span class="badge text-bg-danger">Suspended</span> } else { <span class="badge text-bg-success">Active</span> }</td>
+                            <td class="text-end">@user.Queries.ToString("#,0")</td>
+                            <td class="text-end">@Format(user.Co2)</td>
+                            <td class="text-nowrap">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="() => StartEdit(user)" disabled="@busy">Edit</button>
+                                <button class="btn btn-sm @(user.IsSuspended ? "btn-outline-success" : "btn-outline-danger")" type="button"
+                                        @onclick="() => ToggleSuspendAsync(user)" disabled="@busy">@(user.IsSuspended ? "Reactivate" : "Suspend")</button>
+                                <button class="btn btn-sm btn-outline-secondary" type="button"
+                                        @onclick="() => ToggleAdminAsync(user)" disabled="@busy">@(user.IsAdmin ? "Remove admin" : "Make admin")</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? currentUserId;
+    private IReadOnlyList<AdminUserRow> users = [];
+    private PlatformTotals? totals;
+    private string? message;
+    private bool messageOk;
+    private bool busy;
+
+    private string? newEmail;
+    private string? newPassword;
+    private bool newIsAdmin;
+
+    private string? editingId;
+    private string? editEmail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        users = await AdminService.GetUsersAsync();
+        totals = await AdminService.GetPlatformTotalsAsync();
+    }
+
+    private async Task RunAsync(Func<Task<AdminResult>> action)
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var result = await action();
+            message = result.Message;
+            messageOk = result.Succeeded;
+            await LoadAsync();
+        }
+        catch (Exception ex) when (ex is Microsoft.EntityFrameworkCore.DbUpdateException or InvalidOperationException or Npgsql.NpgsqlException)
+        {
+            message = "The action could not be completed. Please check the database connection.";
+            messageOk = false;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private Task AddUserAsync() => RunAsync(async () =>
+    {
+        var result = await AdminService.AddUserAsync(newEmail, newPassword, newIsAdmin);
+        if (result.Succeeded)
+        {
+            newEmail = newPassword = null;
+            newIsAdmin = false;
+        }
+        return result;
+    });
+
+    private void StartEdit(AdminUserRow user)
+    {
+        editingId = user.Id;
+        editEmail = user.Email;
+        message = null;
+    }
+
+    private void CancelEdit() => editingId = null;
+
+    private Task SaveEmailAsync(string userId) => RunAsync(async () =>
+    {
+        var result = await AdminService.UpdateEmailAsync(userId, editEmail);
+        if (result.Succeeded) editingId = null;
+        return result;
+    });
+
+    private Task ToggleSuspendAsync(AdminUserRow user)
+        => RunAsync(() => AdminService.SetSuspendedAsync(currentUserId!, user.Id, !user.IsSuspended));
+
+    private Task ToggleAdminAsync(AdminUserRow user)
+        => RunAsync(() => AdminService.SetAdminAsync(currentUserId!, user.Id, !user.IsAdmin));
+
+    private static string Format(decimal value) => value.ToString("#,0.####");
+}

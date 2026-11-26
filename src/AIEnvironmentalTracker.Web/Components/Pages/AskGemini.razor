@@ -6,13 +6,15 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UsageTrackingService UsageTrackingService
 @inject GeminiService Gemini
+@inject AskLimiter Limiter
 
 <PageTitle>Ask Gemini · OxyGenAI</PageTitle>
 
 <h1>Ask Gemini</h1>
 <p>
-    Send a prompt to Google Gemini (<code>@Gemini.Model</code>). The app reads the token counts from the
+    Send a prompt to Google Gemini. The app reads the token counts from the
     reply, estimates the environmental impact and saves it to your usage history.
+    To send one prompt to several models, use <a href="compare">Compare models</a>.
 </p>
 
 @if (!Gemini.IsConfigured)
@@ -23,8 +25,15 @@
 <div class="card mb-4">
     <div class="card-body">
         <form @onsubmit="SendAsync" @onsubmit:preventDefault>
+            <label class="form-label" for="model">Model</label>
+            <select id="model" class="form-select mb-3 w-auto" @bind="selectedModel" disabled="@sending">
+                @foreach (var model in Gemini.AvailableModels)
+                {
+                    <option value="@model">@model</option>
+                }
+            </select>
             <label class="form-label" for="prompt">Your prompt</label>
-            <textarea id="prompt" class="form-control" rows="4" maxlength="@MaxPromptLength"
+            <textarea id="prompt" class="form-control" rows="4" maxlength="@Gemini.MaxPromptCharacters"
                       @bind="prompt" @bind:event="oninput" disabled="@sending"></textarea>
             <button class="btn btn-primary mt-3" type="submit"
                     disabled="@(sending || string.IsNullOrWhiteSpace(prompt) || !Gemini.IsConfigured)">
@@ -72,9 +81,12 @@
     Google published estimates for the median Gemini Apps text prompt (May 2025):
     @TokenImpactEstimator.ReferenceEnergyWh Wh energy, @TokenImpactEstimator.ReferenceCo2Grams g CO₂e and
     @TokenImpactEstimator.ReferenceWaterMl mL water. Google did not publish the token count of that prompt,
-    so this app assumes @TokenImpactEstimator.ReferenceTokenCount tokens and scales linearly:
-    impact = reference × (total tokens ÷ @TokenImpactEstimator.ReferenceTokenCount).
-    These are rough estimates, not measurements.
+    so this app assumes @TokenImpactEstimator.ReferenceTokenCount tokens and scales the energy linearly with the
+    total tokens. Carbon and water are then derived from that energy with Google's method:
+    CO₂e = energy × 94 g/kWh (market-based grid factor) + embodied 0.010 g, and
+    water = (energy − data-center overhead, PUE 1.09) × 1.15 L/kWh.
+    Google's figures describe Gemini Apps text prompts only, and every Gemini model is given the same factor here.
+    These are rough estimates, not measurements. Source: Google, arXiv:2508.15734.
 </div>
 
 <h2 class="h5">Your totals</h2>
@@ -83,9 +95,8 @@
 <RecentUsageTable Records="records" />
 
 @code {
-    private const int MaxPromptLength = 4000;
-
     private string? userId;
+    private string selectedModel = string.Empty;
     private string prompt = string.Empty;
     private bool sending;
     private string? error;
@@ -100,6 +111,7 @@
     {
         var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         userId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        selectedModel = Gemini.Model;
         if (userId is not null)
             await LoadAsync();
     }
@@ -120,9 +132,25 @@
         reply = null;
         saved = null;
         recommendations = [];
+
+        if (prompt.Length > Gemini.MaxPromptCharacters)
+        {
+            error = $"The prompt is too long. The limit is {Gemini.MaxPromptCharacters:N0} characters.";
+            sending = false;
+            return;
+        }
+
+        var allowance = Limiter.TryAcquire(userId);
+        if (!allowance.Allowed)
+        {
+            error = allowance.Message;
+            sending = false;
+            return;
+        }
+
         try
         {
-            reply = await Gemini.GenerateAsync(prompt);
+            reply = await Gemini.GenerateAsync(prompt, selectedModel);
         }
         catch (GeminiException ex)
         {
@@ -137,7 +165,7 @@
 
         try
         {
-            var factor = TokenImpactEstimator.CreateFactor(Gemini.Model, reply.TotalTokens);
+            var factor = TokenImpactEstimator.CreateFactor(reply.Model, reply.TotalTokens);
             var result = await UsageTrackingService.RecordAsync(userId, queryCount: 1, factor);
             saved = result.Record;
             recommendations = result.Recommendations;

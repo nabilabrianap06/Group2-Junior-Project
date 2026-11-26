@@ -54,6 +54,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddScoped<UsageTrackingService>();
 builder.Services.AddScoped<BrowserTimeService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<ModelComparisonService>();
+
+// Per-user allowance for Gemini requests (section "AskLimits"); counters are kept in memory.
+builder.Services.Configure<AskLimitOptions>(builder.Configuration.GetSection(AskLimitOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<AskLimiter>();
 
 // Gemini web API: key from user-secrets "Gemini:ApiKey" or environment variable Gemini__ApiKey.
 builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));
@@ -65,6 +72,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
@@ -88,6 +96,18 @@ using (var scope = app.Services.CreateScope())
             "connection string exists, and the username and password are correct.");
         throw;
     }
+}
+
+// Make sure the Admin role and the admin account exist (default admin@email.com, see AdminService).
+// "Admin:Email" and "Admin:Password" (user-secrets, environment variables or oxygenai.settings.json) replace the defaults.
+using (var scope = app.Services.CreateScope())
+{
+    var admin = scope.ServiceProvider.GetRequiredService<AdminService>();
+    var seeded = await admin.EnsureDefaultAdminAsync(
+        app.Configuration[AdminService.AdminEmailSetting],
+        app.Configuration[AdminService.AdminPasswordSetting]);
+    if (seeded != AdminSeedResult.Unchanged)
+        app.Logger.LogInformation("Admin account {Result}.", seeded);
 }
 
 // Configure the HTTP request pipeline.

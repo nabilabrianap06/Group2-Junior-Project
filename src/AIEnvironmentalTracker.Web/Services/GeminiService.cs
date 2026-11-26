@@ -14,7 +14,17 @@ public class GeminiOptions
     /// <summary>Set with user-secrets ("Gemini:ApiKey") or the environment variable Gemini__ApiKey. Never in appsettings.json.</summary>
     public string? ApiKey { get; set; }
 
-    public string Model { get; set; } = "gemini-2.5-flash";
+    /// <summary>The default model, used when the caller does not pick one.</summary>
+    public string Model { get; set; } = "gemini-3.5-flash-lite";
+
+    /// <summary>
+    /// Models a user may choose. Only these ids are ever sent to Google, so a user cannot make the app call
+    /// an arbitrary (possibly paid) model. The default <see cref="Model"/> is always allowed.
+    /// </summary>
+    public List<string> AllowedModels { get; set; } = [];
+
+    /// <summary>Longest prompt accepted, in characters. Enforced here, not only in the browser.</summary>
+    public int MaxPromptCharacters { get; set; } = 4000;
 
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta/";
 }
@@ -37,16 +47,37 @@ public class GeminiService(HttpClient http, IOptions<GeminiOptions> options, ILo
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(settings.ApiKey);
 
+    /// <summary>The default model.</summary>
     public string Model => settings.Model;
 
-    public async Task<GeminiReply> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
+    public int MaxPromptCharacters => settings.MaxPromptCharacters;
+
+    /// <summary>The models a user may choose, default first, without duplicates.</summary>
+    public IReadOnlyList<string> AvailableModels
+        => new[] { settings.Model }
+            .Concat(settings.AllowedModels)
+            .Where(model => !string.IsNullOrWhiteSpace(model))
+            .Select(model => model.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    /// <summary>Sends <paramref name="prompt"/> to <paramref name="model"/> (the default model when null).</summary>
+    public async Task<GeminiReply> GenerateAsync(string prompt, string? model = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(prompt))
             throw new GeminiException("Please enter a prompt.");
+        if (prompt.Length > settings.MaxPromptCharacters)
+            throw new GeminiException($"The prompt is too long. The limit is {settings.MaxPromptCharacters:N0} characters.");
         if (!IsConfigured)
             throw new GeminiException(MissingKeyMessage);
 
-        var url = new Uri(new Uri(settings.BaseUrl), $"models/{Uri.EscapeDataString(settings.Model)}:generateContent");
+        model = string.IsNullOrWhiteSpace(model) ? settings.Model : model.Trim();
+        var allowed = AvailableModels.FirstOrDefault(candidate => candidate.Equals(model, StringComparison.OrdinalIgnoreCase));
+        if (allowed is null)
+            throw new GeminiException("This model is not available. Choose one from the list.");
+        model = allowed;
+
+        var url = new Uri(new Uri(settings.BaseUrl), $"models/{Uri.EscapeDataString(model)}:generateContent");
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = JsonContent.Create(new GenerateRequest([new Content("user", [new Part(prompt)])]))
@@ -101,7 +132,7 @@ public class GeminiService(HttpClient http, IOptions<GeminiOptions> options, ILo
             var candidateTokens = usage?.CandidatesTokenCount ?? 0;
             var totalTokens = usage?.TotalTokenCount ?? promptTokens + candidateTokens;
 
-            return new GeminiReply(text, result?.ModelVersion ?? settings.Model, promptTokens, candidateTokens, totalTokens);
+            return new GeminiReply(text, model, promptTokens, candidateTokens, totalTokens);
         }
     }
 
