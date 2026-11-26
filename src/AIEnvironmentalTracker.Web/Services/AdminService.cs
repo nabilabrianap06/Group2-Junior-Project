@@ -16,6 +16,19 @@ public sealed record PlatformTotals(
     int Queries, decimal Water, decimal Co2, decimal Energy,
     IReadOnlyList<ModelBreakdown> Models);
 
+/// <summary>What <see cref="AdminService.EnsureDefaultAdminAsync"/> did.</summary>
+public enum AdminSeedResult
+{
+    /// <summary>The account did not exist and was created.</summary>
+    Created,
+
+    /// <summary>The account existed without the Admin role and received it.</summary>
+    Promoted,
+
+    /// <summary>The account already was an admin; nothing was changed.</summary>
+    Unchanged
+}
+
 /// <summary>Outcome of an admin action, with a message that is safe to show.</summary>
 public sealed record AdminResult(bool Succeeded, string Message)
 {
@@ -31,7 +44,13 @@ public sealed record AdminResult(bool Succeeded, string Message)
 public class AdminService(ApplicationDbContext db, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
 {
     public const string AdminRole = "Admin";
+
+    // Demo account created at startup. The values are deliberately fixed in the code and shown in the user guide.
+    // Anyone who runs the app can sign in with them, so change them (settings below) if the app is ever shared.
+    public const string DefaultAdminEmail = "admin@email.com";
+    public const string DefaultAdminPassword = "Admin#2026";
     public const string AdminEmailSetting = "Admin:Email";
+    public const string AdminPasswordSetting = "Admin:Password";
 
     /// <summary>Creates the Admin role if it does not exist yet.</summary>
     public async Task EnsureRoleAsync()
@@ -41,20 +60,35 @@ public class AdminService(ApplicationDbContext db, UserManager<ApplicationUser> 
     }
 
     /// <summary>
-    /// Makes the account with the configured email ("Admin:Email") an admin. Called at startup and after a
-    /// registration, so the first admin needs no manual database edit. Returns true if the user was promoted.
+    /// Makes sure the admin account exists: creates it (confirmed, with the Admin role) or, when an account with that
+    /// email already exists, gives it the Admin role. An existing account keeps its password and its suspension.
+    /// Defaults are <see cref="DefaultAdminEmail"/> and <see cref="DefaultAdminPassword"/>; settings "Admin:Email" and
+    /// "Admin:Password" replace them. Called at startup.
     /// </summary>
-    public async Task<bool> PromoteConfiguredAdminAsync(string? configuredEmail, ApplicationUser? user = null)
+    public async Task<AdminSeedResult> EnsureDefaultAdminAsync(string? email = null, string? password = null)
     {
-        if (string.IsNullOrWhiteSpace(configuredEmail)) return false;
-
-        user ??= await userManager.FindByEmailAsync(configuredEmail.Trim());
-        if (user is null || !string.Equals(user.Email, configuredEmail.Trim(), StringComparison.OrdinalIgnoreCase))
-            return false;
+        email = string.IsNullOrWhiteSpace(email) ? DefaultAdminEmail : email.Trim();
+        password = string.IsNullOrEmpty(password) ? DefaultAdminPassword : password;
 
         await EnsureRoleAsync();
-        if (await userManager.IsInRoleAsync(user, AdminRole)) return false;
-        return (await userManager.AddToRoleAsync(user, AdminRole)).Succeeded;
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            user = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
+            var created = await userManager.CreateAsync(user, password);
+            if (!created.Succeeded)
+                throw new InvalidOperationException("The admin account could not be created: " + Describe(created));
+
+            await userManager.AddToRoleAsync(user, AdminRole);
+            return AdminSeedResult.Created;
+        }
+
+        if (await userManager.IsInRoleAsync(user, AdminRole))
+            return AdminSeedResult.Unchanged;
+
+        await userManager.AddToRoleAsync(user, AdminRole);
+        return AdminSeedResult.Promoted;
     }
 
     public async Task<IReadOnlyList<AdminUserRow>> GetUsersAsync(CancellationToken cancellationToken = default)

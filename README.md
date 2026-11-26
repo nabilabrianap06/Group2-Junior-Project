@@ -123,11 +123,13 @@ To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish
 
 4. Open `http://localhost:5260` and register; you are signed in right away. Use **Usage tracker** to enter manual estimates, **Ask Gemini** to send live prompts, **Compare models** to compare models, and **Dashboard** for trends.
 
-To get an admin account, set the email before registering (the account with that email becomes an admin when it registers):
+**Admin account.** The app creates an admin account at start-up, so there is nothing to register:
 
-```powershell
-dotnet user-secrets set "Admin:Email" "you@example.com" --project src/AIEnvironmentalTracker.Web
-```
+| Email | Password |
+| :--- | :--- |
+| `admin@email.com` | `Admin#2026` |
+
+These are demo values written in the code (`AdminService`), so anyone who can read this repository knows them. If the app is shared, change the password after signing in (click the email in the menu), or set `Admin:Email` and `Admin:Password` before the account is created. An account that already exists keeps its password.
 
 Run the tests with `dotnet test AIEnvironmentalTracker.slnx`.
 

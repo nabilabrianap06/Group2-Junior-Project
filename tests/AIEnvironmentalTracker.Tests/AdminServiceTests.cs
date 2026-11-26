@@ -148,17 +148,82 @@ public class AdminServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task PromoteConfiguredAdmin_PromotesOnlyTheMatchingEmail()
+    public async Task EnsureDefaultAdmin_CreatesTheDemoAccount_ThatCanSignIn()
     {
-        var match = await UserAsync("first@example.test");
-        var other = await UserAsync("other@example.test");
+        var result = await admin.EnsureDefaultAdminAsync();
 
-        Assert.False(await admin.PromoteConfiguredAdminAsync(null));
-        Assert.False(await admin.PromoteConfiguredAdminAsync("nobody@example.test"));
-        Assert.True(await admin.PromoteConfiguredAdminAsync("FIRST@example.test"));
-        Assert.True(await users.IsInRoleAsync(match, AdminService.AdminRole));
-        Assert.False(await users.IsInRoleAsync(other, AdminService.AdminRole));
-        Assert.False(await admin.PromoteConfiguredAdminAsync("first@example.test")); // already an admin
+        Assert.Equal(AdminSeedResult.Created, result);
+        var user = await users.FindByEmailAsync(AdminService.DefaultAdminEmail);
+        Assert.NotNull(user);
+        Assert.Equal("admin@email.com", AdminService.DefaultAdminEmail);
+        Assert.True(user.EmailConfirmed);
+        Assert.True(await users.IsInRoleAsync(user, AdminService.AdminRole));
+        Assert.True(await users.CheckPasswordAsync(user, AdminService.DefaultAdminPassword)); // also proves the password meets the policy
+    }
+
+    [Fact]
+    public async Task EnsureDefaultAdmin_IsIdempotent()
+    {
+        await admin.EnsureDefaultAdminAsync();
+        Assert.Equal(AdminSeedResult.Unchanged, await admin.EnsureDefaultAdminAsync());
+        Assert.Single(await admin.GetUsersAsync());
+    }
+
+    [Fact]
+    public async Task EnsureDefaultAdmin_KeepsAChangedPassword()
+    {
+        await admin.EnsureDefaultAdminAsync();
+        var user = (await users.FindByEmailAsync(AdminService.DefaultAdminEmail))!;
+        Assert.True((await users.ChangePasswordAsync(user, AdminService.DefaultAdminPassword, "Another#Pass1")).Succeeded);
+
+        await admin.EnsureDefaultAdminAsync();   // e.g. the next app start
+
+        user = (await users.FindByEmailAsync(AdminService.DefaultAdminEmail))!;
+        Assert.True(await users.CheckPasswordAsync(user, "Another#Pass1"));
+        Assert.False(await users.CheckPasswordAsync(user, AdminService.DefaultAdminPassword));
+    }
+
+    [Fact]
+    public async Task EnsureDefaultAdmin_PromotesAnExistingAccountWithThatEmail_WithoutTouchingItsPassword()
+    {
+        var existing = await UserAsync("admin@email.com");   // registered earlier as a normal user with the test password
+        Assert.False(await users.IsInRoleAsync(existing, AdminService.AdminRole));
+
+        Assert.Equal(AdminSeedResult.Promoted, await admin.EnsureDefaultAdminAsync());
+
+        Assert.True(await users.IsInRoleAsync(existing, AdminService.AdminRole));
+        Assert.True(await users.CheckPasswordAsync(existing, Password));
+    }
+
+    [Fact]
+    public async Task EnsureDefaultAdmin_AcceptsAnotherEmailAndPassword()
+    {
+        Assert.Equal(AdminSeedResult.Created, await admin.EnsureDefaultAdminAsync(" Boss@example.test ", "Custom#Pass9"));
+
+        var user = (await users.FindByEmailAsync("boss@example.test"))!;
+        Assert.True(await users.IsInRoleAsync(user, AdminService.AdminRole));
+        Assert.True(await users.CheckPasswordAsync(user, "Custom#Pass9"));
+        Assert.Null(await users.FindByEmailAsync(AdminService.DefaultAdminEmail));
+    }
+
+    [Fact]
+    public async Task EnsureDefaultAdmin_RejectsAWeakConfiguredPassword()
+    {
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => admin.EnsureDefaultAdminAsync("boss@example.test", "abc"));
+        Assert.Contains("could not be created", ex.Message);
+        Assert.Null(await users.FindByEmailAsync("boss@example.test"));
+    }
+
+    [Fact]
+    public async Task EnsureDefaultAdmin_DoesNotUndoASuspension()
+    {
+        await admin.EnsureDefaultAdminAsync();
+        var seeded = (await users.FindByEmailAsync(AdminService.DefaultAdminEmail))!;
+        var other = await UserAsync("other@example.test", isAdmin: true);
+        Assert.True((await admin.SetSuspendedAsync(other.Id, seeded.Id, true)).Succeeded);
+
+        Assert.Equal(AdminSeedResult.Unchanged, await admin.EnsureDefaultAdminAsync());
+        Assert.True((await admin.GetUsersAsync()).Single(u => u.Email == AdminService.DefaultAdminEmail).IsSuspended);
     }
 
     [Fact]

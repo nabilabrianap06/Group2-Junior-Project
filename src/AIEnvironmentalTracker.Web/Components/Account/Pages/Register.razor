@@ -14,8 +14,6 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
-@inject AIEnvironmentalTracker.Web.Services.AdminService AdminService
-@inject IConfiguration Configuration
 
 <PageTitle>Register</PageTitle>
 
@@ -88,9 +86,6 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
-
-        // The account named in "Admin:Email" becomes an admin right away, so the first admin needs no restart.
-        await AdminService.PromoteConfiguredAdminAsync(Configuration["Admin:Email"], user);
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);

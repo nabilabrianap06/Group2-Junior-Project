@@ -98,17 +98,16 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Make sure the Admin role exists and promote the account named in "Admin:Email" (if it is registered).
-// The setting comes from user-secrets, the environment variable Admin__Email, or oxygenai.settings.json.
+// Make sure the Admin role and the admin account exist (default admin@email.com, see AdminService).
+// "Admin:Email" and "Admin:Password" (user-secrets, environment variables or oxygenai.settings.json) replace the defaults.
 using (var scope = app.Services.CreateScope())
 {
     var admin = scope.ServiceProvider.GetRequiredService<AdminService>();
-    await admin.EnsureRoleAsync();
-    var adminEmail = app.Configuration[AdminService.AdminEmailSetting];
-    if (await admin.PromoteConfiguredAdminAsync(adminEmail))
-        app.Logger.LogInformation("{Email} was made an admin.", adminEmail);
-    else if (!string.IsNullOrWhiteSpace(adminEmail))
-        app.Logger.LogInformation("Admin:Email is set. {Email} becomes an admin when it registers (or is already one).", adminEmail);
+    var seeded = await admin.EnsureDefaultAdminAsync(
+        app.Configuration[AdminService.AdminEmailSetting],
+        app.Configuration[AdminService.AdminPasswordSetting]);
+    if (seeded != AdminSeedResult.Unchanged)
+        app.Logger.LogInformation("Admin account {Result}.", seeded);
 }
 
 // Configure the HTTP request pipeline.

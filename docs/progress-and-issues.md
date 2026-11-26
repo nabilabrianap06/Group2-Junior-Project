@@ -15,10 +15,10 @@ Requirement for the course: **the codebase is C# and the output is a Windows app
 | Gemini model choice and compare | Working: two models offered (`gemini-3.5-flash-lite`, `gemini-3.6-flash`); both answered a test call on 2026-11-25 |
 | Usage limits | Working: prompt length, daily allowance per user, pause between requests |
 | Trend dashboard | Working, not yet checked in a browser by a second person |
-| Admin panel | Working (service and access rules tested); button clicks not yet tested in a browser |
+| Admin panel | Working (service, access rules and sign-in of the built-in admin tested); button clicks not yet tested in a browser |
 | Impact formula | Implemented from Google's published method; same factor for every model |
 | Windows-app output | **Met**: `OxyGenAI-Desktop.exe` is a WinForms window hosting the app in WebView2; the package also keeps the browser start. Tested with the shell's `--check` in source and package mode; not yet clicked through by a person |
-| Automated tests | 98 xUnit tests, all passing (`dotnet test AIEnvironmentalTracker.slnx`); they include the Windows shell's address policy, server locator and start-up wait |
+| Automated tests | 104 xUnit tests, all passing (`dotnet test AIEnvironmentalTracker.slnx`); they include the Windows shell's address policy, server locator and start-up wait |
 | Deployment | Not planned. The final result is the Windows application (ADR-008) |
 
 ---
@@ -37,6 +37,7 @@ Requirement for the course: **the codebase is C# and the output is a Windows app
 | Usage limits | `AskLimiter` (daily allowance per user, minimum pause) and a server-side prompt length cap. Counters are in memory. |
 | Dashboard (`/dashboard`) | Daily (14 days), weekly (12 weeks) and monthly (12 months) totals in the browser's time zone, plus per-model totals. |
 | Admin panel (`/admin`) | List, add, edit email, suspend or reactivate, grant or revoke the Admin role, platform-wide totals. |
+| Built-in admin account | `admin@email.com` / `Admin#2026`, created at startup (ADR-009). |
 | Database | PostgreSQL via EF Core; migrations applied at startup. Hosted on Neon for development. |
 | Packaging | `publish.ps1` builds a self-contained zip; `Setup`/`Start` `.bat` scripts; user guide in `docs/USER_GUIDE.md`. |
 
@@ -59,6 +60,7 @@ Not planned (they were never part of the README or the class diagram): sending e
 | Migrations against PostgreSQL (Neon) | Applied at startup; 10 tables created |
 | Register → protected pages (HTTP) | Works; anonymous users are redirected to login |
 | Dashboard aggregation (service, test data in Neon) | Daily, weekly, monthly buckets, empty buckets, time-zone boundary: passed |
+| Built-in admin over HTTP (2026-11-26, empty database) | Account created at startup; wrong password refused; correct password signs in; `/admin` and the menu link available |
 | Admin service (18 checks) and access rules over HTTP | Passed: anonymous → login, normal user → access denied, admin → panel; suspended user → lockout page |
 | Impact formula (12 checks) | Reproduces Google's figures: 0.24 Wh → 0.0326 g CO₂e and 0.253 mL water |
 
@@ -77,10 +79,10 @@ Not planned (they were never part of the README or the class diagram): sending e
 | 5 | **Every Gemini model gets the same energy per token.** Google publishes one median figure, not one per model, and price tiers say nothing about energy. | The comparison ranks models by tokens used for a prompt, not by energy per token. | Say so in the UI (done). Add per-model figures only from a published or measured source (ADR-005). |
 | 6 | **Token scaling is an assumption.** The 500-token reference prompt is ours, not Google's. | Absolute numbers are rough. | Keep the limitation visible in the UI and report. |
 | 7 | **Two user models.** `ApplicationUser` (Identity, used) and Domain `User/Admin/RegisteredUser` (not stored; plain-text password field). | Confusing; the Domain classes must never be persisted as they are. | Keep Identity for authentication (ADR-003); mark Domain user classes as design-only or remove them. |
-| 8 | **Admin bootstrap.** The account named in `Admin:Email` becomes admin when it registers; there is no email confirmation. | If the admin does not register first, someone else could register that address. | Register the admin account first; keep `Admin:Email` out of public config until then. |
+| 8 | **Fixed admin password.** The built-in account `admin@email.com` has the password `Admin#2026`, written in the code and the user guide. | Anyone who knows it can manage all accounts. Accepted for a local demo. | Change the password after signing in, or set `Admin:Password` before the first start; do not use the default for shared or hosted use. |
 | 9 | **Suspended users keep their session for up to about 30 minutes.** Identity revalidates the security stamp every 30 minutes. | A suspended user may still browse briefly. New logins are refused immediately. | Shorten the revalidation interval if needed. |
 | 10 | **Role changes need a new sign-in.** Roles are stored in the cookie. | A newly promoted admin must log in again. | Document it. |
-| 11 | ~~No automated tests.~~ | Resolved: 98 xUnit tests (estimator, trend, admin rules, limiter, Gemini client with a fake HTTP handler, comparison, Windows shell logic). | Keep adding tests with each feature. Black-box testing of the UI is still manual. |
+| 11 | ~~No automated tests.~~ | Resolved: 104 xUnit tests (estimator, trend, admin rules, limiter, Gemini client with a fake HTTP handler, comparison, Windows shell logic). | Keep adding tests with each feature. Black-box testing of the UI is still manual. |
 | 12 | ~~Repository hygiene: `app.db` and an outdated README.~~ | Resolved: `app.db` removed, README corrected. | – |
 | 13 | **Neon free database sleeps when idle.** | The first request after a pause can take seconds. | Warn testers; retry once. |
 | 14 | **Secrets.** Connection strings and API keys live in user-secrets, environment variables or `oxygenai.settings.json` (git-ignored). | A key pasted into chat or committed is compromised. | Never paste or commit keys; rotate any key that was exposed. |

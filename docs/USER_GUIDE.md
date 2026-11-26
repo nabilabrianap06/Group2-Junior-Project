@@ -94,6 +94,13 @@ Open **Dashboard** and choose **Daily** (14 days), **Weekly** (12 weeks) or **Mo
 - Google's free tier also has its own limits for all users together; when it is reached you see the message "Gemini rate limit or quota reached".
 
 ### 4.7 Admin panel (administrators only)
+OxyGenAI creates an administrator account the first time it starts. Sign in with:
+
+- **Email:** `admin@email.com`
+- **Password:** `Admin#2026`
+
+This password is the same on every installation. Change it after the first sign-in (click the email in the menu) if other people can use the computer. To start with different values, add `"Admin": { "Email": "...", "Password": "..." }` to `oxygenai.settings.json` before the first start (the password needs at least 6 characters with an upper-case letter, a lower-case letter, a digit and a symbol; running the setup again rewrites the file). These values do not change the password of an account that already exists.
+
 Administrators see **Admin** in the menu. It shows platform-wide totals and lets you add accounts, change an email, suspend or reactivate an account, and grant or remove the Admin role. Suspended accounts cannot sign in, but their history is kept. You cannot suspend yourself, remove your own admin role, or remove the last active admin.
 
 These figures are **estimates, not measurements**.
@@ -140,7 +147,8 @@ Check that the shell, the server and WebView2 work together (no clicks needed; w
 
 ```powershell
 src\AIEnvironmentalTracker.Desktopin\Debug
-et10.0-windows\OxyGenAI-Desktop.exe --check "C:\pathesult.txt"
+et10.0-windows\OxyGenAI-Desktop.exe --check "C:\path
+esult.txt"
 ```
 
 Build the installable package (writes `dist/OxyGenAI-win-x64.zip` with `OxyGenAI-Desktop.exe` and `OxyGenAI.exe`, about 100 MB because each is self-contained):

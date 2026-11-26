@@ -146,7 +146,7 @@ Water (mL)   = (E_total - E_overhead) x 1.15 L/kWh
 | `Gemini:AllowedModels` | `appsettings.json` | List of model ids a user may pick; the default is always allowed. |
 | `Gemini:MaxPromptCharacters` | `appsettings.json` | Longest accepted prompt (4,000). |
 | `AskLimits:DailyRequestsPerUser`, `AskLimits:MinSecondsBetweenRequests` | `appsettings.json` | Per-user allowance (30 per UTC day) and pause (3 s); 0 turns a limit off. |
-| `Admin:Email` | user-secrets, env `Admin__Email`, or settings file | The account with this email becomes an admin at startup and at registration. |
+| `Admin:Email`, `Admin:Password` | user-secrets, env `Admin__Email` / `Admin__Password`, or settings file | Optional. Replace the built-in admin account `admin@email.com` / `Admin#2026`, which is created at startup. An existing account keeps its password. |
 | `OpenBrowser` | settings file | Packaged app opens the browser after start. |
 
 Secrets are never committed. `oxygenai.settings.json` is git-ignored.
@@ -205,10 +205,11 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 - **Decision:** distribute the Windows package (zip). Hosting is not planned; should it ever be needed, a Docker-capable host with the existing PostgreSQL database would work, Vercel would not.
 - **Consequences:** no public URL; users run the app on their own PC with their own PostgreSQL.
 
-### ADR-009 – First admin through configuration
-- **Status:** accepted for the MVP.
-- **Decision:** `Admin:Email` names the first admin; the account is promoted at startup and at registration. Further admins are granted in the admin panel.
-- **Consequences:** no manual database edit is needed; see the registration-order risk in the progress document.
+### ADR-009 – Built-in demo admin account
+- **Status:** accepted (replaces the earlier "promote the configured email at registration" approach).
+- **Context:** the product is a local Windows application shown in a demo. The earlier approach needed a configuration step and let whoever registered the configured address first become admin.
+- **Decision:** at startup the app creates `admin@email.com` with the password `Admin#2026` (constants in `AdminService`) and gives it the Admin role. `Admin:Email` and `Admin:Password` can replace the values. An existing account with that email is given the role but keeps its password and suspension. Further admins are granted in the admin panel.
+- **Consequences:** nothing to set up, and the address cannot be claimed by someone else. The credentials are public to anyone who can read the code or the user guide, which is acceptable for a local demo only; they must be changed before any shared or hosted use.
 
 ---
 
