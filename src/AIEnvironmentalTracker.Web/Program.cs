@@ -92,7 +92,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         app.Logger.LogCritical(ex,
-            "Could not apply database migrations. Check that PostgreSQL is running, the database in the " +
+            "Could not apply database migrations. Check the internet connection and that the Neon database in the " +
             "connection string exists, and the username and password are correct.");
         throw;
     }

@@ -1,13 +1,13 @@
 # OxyGenAI – Decisions and System Design
 
-_Snapshot: 2026-11-25._
+_Snapshot: 2026-11-27._
 
 ---
 
 ## 1. Context and requirements
 
 - Estimate the environmental impact (energy, CO₂, water) of generative-AI usage per interaction.
-- Course requirement: **C# codebase; the output is a Windows application**. Blazor is allowed. The final result is this Windows application; the app is not deployed to a web host.
+- Course requirement: **C# codebase; the output is a Windows application**. Blazor is allowed. The final result is this Windows application. It runs on the user's PC and is not deployed to a web host; only the database (Neon) is in the cloud.
 - Roles: registered user (tracks own usage) and admin (manages accounts, sees platform totals).
 - Constraints: small team, short deadline, free-tier services only.
 
@@ -26,7 +26,7 @@ flowchart LR
         E[EF Core DbContext]
     end
     G[(Google Gemini REST API)]
-    P[(PostgreSQL<br/>local or Neon)]
+    P[(Neon<br/>cloud PostgreSQL)]
 
     B <-->|HTTP + SignalR on 127.0.0.1| W
     W --> S
@@ -75,7 +75,7 @@ The shell does not contain any application logic. It starts the existing web app
 
 Diagnostic: `OxyGenAI-Desktop.exe --check <file>` runs steps 1 to 5 without user interaction, writes `OK|<page title>|<address>` or `FAIL|<reason>` to the file and exits with code 0 or 1.
 
-Limits: it needs the WebView2 runtime (part of Windows 11); the package holds two self-contained programs (about 100 MB zipped); the shell does not bundle PostgreSQL.
+Limits: it needs the WebView2 runtime (part of Windows 11) and internet access for the Neon database; the package holds two self-contained programs (about 100 MB zipped).
 
 ## 3. Data model
 
@@ -140,7 +140,7 @@ Water (mL)   = (E_total - E_overhead) x 1.15 L/kWh
 
 | Setting | Where to set | Notes |
 | :--- | :--- | :--- |
-| `ConnectionStrings:DefaultConnection` | user-secrets, env `ConnectionStrings__DefaultConnection`, or `oxygenai.settings.json` | Required. Npgsql format, `SSL Mode=Require` for Neon. |
+| `ConnectionStrings:DefaultConnection` | user-secrets, env `ConnectionStrings__DefaultConnection`, or `oxygenai.settings.json` (written by the setup) | Required. The Neon database, Npgsql format with `SSL Mode=Require`, direct (non-pooler) host. |
 | `Gemini:ApiKey` | user-secrets, env `Gemini__ApiKey`, or settings file | Optional; Ask Gemini is off without it. |
 | `Gemini:Model` | `appsettings.json` or env `Gemini__Model` | Default model; in the repository `gemini-3.5-flash-lite`. |
 | `Gemini:AllowedModels` | `appsettings.json` | List of model ids a user may pick; the default is always allowed. |
@@ -161,11 +161,11 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 - **Decision:** ASP.NET Core Blazor Server (interactive server rendering) with Bootstrap.
 - **Consequences:** needs a persistent connection (SignalR), so it cannot run on serverless hosts; works well as a local self-contained program.
 
-### ADR-002 – PostgreSQL (Neon) instead of SQLite
-- **Status:** accepted.
-- **Context:** the project template used SQLite (`app.db`). The group wanted a real server database and a shared development database.
-- **Decision:** Npgsql + EF Core, migrations applied at startup, Neon for the shared dev database, local PostgreSQL for the packaged app.
-- **Consequences:** a database must be running before the app starts; connection strings are kept outside the repository; the leftover `app.db` is obsolete.
+### ADR-002 – Neon (cloud PostgreSQL) instead of SQLite or a local server
+- **Status:** accepted (updated 2026-11-27: no local database).
+- **Context:** the project template used SQLite (`app.db`). The group wants one real database for development and for the packaged app, with nothing to install on the user's PC.
+- **Decision:** Npgsql + EF Core with migrations applied at startup, on Neon everywhere. The setup script of the package accepts only Neon hosts (`.neon.tech`), converts the console's `postgresql://` string, requires SSL and uses the direct host. The application code itself accepts any PostgreSQL connection string, and automated tests use an in-memory database.
+- **Consequences:** the app needs internet access; every PC that is set up holds the database credentials, so the string must be shared only with trusted people and reset in the Neon console if it leaks; users of the same string share data and schema changes; an idle free database takes a few seconds to wake up.
 
 ### ADR-003 – ASP.NET Core Identity for authentication and roles
 - **Status:** accepted.
@@ -202,8 +202,8 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 ### ADR-008 – No web deployment (Vercel or any other host)
 - **Status:** accepted. The final result is the Windows application, so nothing is deployed.
 - **Context:** Vercel has no .NET runtime, and Blazor Server needs long-lived connections.
-- **Decision:** distribute the Windows package (zip). Hosting is not planned; should it ever be needed, a Docker-capable host with the existing PostgreSQL database would work, Vercel would not.
-- **Consequences:** no public URL; users run the app on their own PC with their own PostgreSQL.
+- **Decision:** distribute the Windows package (zip). Hosting is not planned; should it ever be needed, a Docker-capable host with the Neon database would work, Vercel would not.
+- **Consequences:** no public URL; users run the app on their own PC, connected to the Neon database.
 
 ### ADR-009 – Built-in demo admin account
 - **Status:** accepted (replaces the earlier "promote the configured email at registration" approach).

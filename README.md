@@ -19,7 +19,7 @@ This project is built using a pure **.NET ecosystem** to ensure a unified and ma
 | :--- | :--- |
 | **Framework** | ASP.NET Core 10.0 (Blazor Web App) |
 | **Language** | C# |
-| **Database** | PostgreSQL + Entity Framework Core (Npgsql) |
+| **Database** | Neon (cloud PostgreSQL) + Entity Framework Core (Npgsql) |
 | **Authentication** | ASP.NET Core Identity (Role-based: User & Admin) |
 | **AI Integration** | Google Gemini REST API (`HttpClient`) |
 | **Frontend UI** | Blazor Components + Bootstrap |
@@ -85,7 +85,7 @@ docs/                    # User guide, progress, design decisions
 
 ## Homework 8: PostgreSQL and OOP
 
-The usage tracker on the home page demonstrates **encapsulation**. `EnvironmentalFactor` validates and holds per-query factors; `ImpactCalculator.ComputeImpact` calculates totals from a usage log and those factors; `UsageTrackingService.RecordAsync` saves the result in PostgreSQL for the signed-in user. The values entered in the form are user-provided estimates, not measurements from an AI provider. The existing `ai_usage_logs` and `chat_logs` tables are left intact.
+The usage tracker on the home page demonstrates **encapsulation**. `EnvironmentalFactor` validates and holds per-query factors; `ImpactCalculator.ComputeImpact` calculates totals from a usage log and those factors; `UsageTrackingService.RecordAsync` saves the result in PostgreSQL (Neon) for the signed-in user. The values entered in the form are user-provided estimates, not measurements from an AI provider. The existing `ai_usage_logs` and `chat_logs` tables are left intact.
 
 ## Module 10: Minimum Viable Product
 
@@ -95,10 +95,12 @@ The usage tracker on the home page demonstrates **encapsulation**. `Environmenta
 
 ### Install the packaged app (no .NET SDK needed)
 
-1. Install PostgreSQL and make sure it is running.
+OxyGenAI runs on your PC and is not deployed anywhere; only its database is in the cloud (Neon), so internet access is needed.
+
+1. Get the connection string of the Neon project (Neon console, **Connect**).
 2. Extract `OxyGenAI-win-x64.zip` (built with `publish.ps1`, see below).
-3. Double-click `Setup OxyGenAI.bat` and enter your PostgreSQL password and, optionally, your Gemini API key. They are saved in `oxygenai.settings.json` next to `OxyGenAI.exe`, which is never committed.
-4. Double-click **`OxyGenAI-Desktop.exe`**. OxyGenAI opens in its own Windows window; the database is created on first start. (It needs the Microsoft Edge WebView2 Runtime, which Windows 11 already has.) Alternatively, `Start OxyGenAI.bat` runs the same app and opens it in your browser at `http://localhost:5260`.
+3. Double-click `Setup OxyGenAI.bat` and paste the Neon connection string and, optionally, your Gemini API key. They are saved in `oxygenai.settings.json` next to `OxyGenAI.exe`, which is never committed.
+4. Double-click **`OxyGenAI-Desktop.exe`**. OxyGenAI opens in its own Windows window; the tables are created in the Neon database at start-up. (It needs the Microsoft Edge WebView2 Runtime, which Windows 11 already has.) Alternatively, `Start OxyGenAI.bat` runs the same app and opens it in your browser at `http://localhost:5260`.
 
 The full user guide, with troubleshooting, is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
@@ -106,11 +108,11 @@ To build the package yourself: `powershell -ExecutionPolicy Bypass -File publish
 
 ### Run locally
 
-1. Install the .NET 10 SDK and PostgreSQL. Create an empty database, for example `ai_environmental_db`. The app creates the tables itself the first time it starts.
+1. Install the .NET 10 SDK and get the Neon connection string. The app creates and updates the tables itself when it starts. Developers who share a database also share its schema changes; use a separate Neon branch for experiments.
 2. Set the connection string and Gemini API key outside source control. Never put them in `appsettings.json`.
 
    ```powershell
-   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=YOUR_POSTGRES_PASSWORD" --project src/AIEnvironmentalTracker.Web
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=ep-your-endpoint.region.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=YOUR_PASSWORD;SSL Mode=Require" --project src/AIEnvironmentalTracker.Web
    dotnet user-secrets set "Gemini:ApiKey" "YOUR_GEMINI_API_KEY" --project src/AIEnvironmentalTracker.Web
    ```
 

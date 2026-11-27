@@ -1,10 +1,9 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=ai_environmental_db;Username=postgres;Password=CHANGE_ME"
+    "DefaultConnection": "Host=ep-your-endpoint.region.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=CHANGE_ME;SSL Mode=Require"
   },
   "Gemini": {
-    "ApiKey": "",
-    "Model": "gemini-2.5-flash"
+    "ApiKey": ""
   },
   "Kestrel": {
     "Endpoints": {
