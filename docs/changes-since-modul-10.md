@@ -12,6 +12,8 @@ _Snapshot: 2026-11-25. Comparison of the Module 10 deliverable with branch `5330
 
 ---
 
+> The tables in sections 1–5 and 8 describe commit `e954b71`. Later commits are listed in section 6.
+
 ## 1. Summary
 
 - **Module 10 is intact.** Every file of the MVP that is not listed below is unchanged: `UsageRecord`, `ApplicationDbContext`, the migration, `Home.razor` (usage tracker), the Usage components, `publish.ps1`, `packaging/`, and the Domain classes other than `TokenImpactEstimator`.
@@ -95,7 +97,10 @@ The Domain project already had an `Admin` class (`AddUser`, `EditUser`, `Suspend
 | `0cd396a` | This comparison document |
 | `0fc0d8a` | Model choice, Compare models, usage limits, test project, `app.db` removed, README corrected |
 | `e954b71` | Windows shell (WinForms + WebView2) with its tests, `publish.ps1` for both programs, README, user guide and design documents updated |
-| _not yet committed_ | Built-in admin account `admin@email.com` created at startup (replaces promotion at registration, so `Register.razor` is again identical to Module 10); tests and documents updated |
+| `6a42fbc` | Built-in admin account `admin@email.com` created at startup (replaces promotion at registration); tests and documents updated |
+| `8a652bb`, `be365ac` | Team to-do list |
+| `e416e92` | UI redesign: theme, top navigation bar, tracker, Ask Gemini, log in and register; new `AuthLayout`, `Icon`, `BrandMark` (merged into `main` with `9b2cb73`) |
+| _not yet committed_ | Neon only: setup script, example settings, start-up error messages, documents |
 
 ## 7. Effect on the Module 10 worksheet
 

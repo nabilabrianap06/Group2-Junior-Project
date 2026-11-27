@@ -27,14 +27,16 @@ _Created 2026-11-26. Final result: a Windows application written in C# (Blazor i
 
 ## Team and responsibility
 
-| Member | Role | Builds | Sections |
-| :--- | :--- | :--- | :--- |
-| Member 1 | **UI design** | Mockups of every page and of the Windows window; checks that the result matches them | 1–8 (UI rows) |
-| Member 2 | **Front end** | Landing page, look and navigation, sign-in and account pages, admin panel | 1, 2, 3, 7 (front-end rows) |
-| Member 3 | **Front end** | Usage tracker, dashboard, Ask Gemini, Compare models, Windows window | 4, 5, 6, 8 (front-end rows) |
-| Member 4 | **Backend** | Services, domain model, database, integration | 9 |
+Two members work on the backend and two on the front end.
 
-Testing and release (sections 10 and 11) are shared by all members. The split between Members 1–3 is a proposal; adjust it together and keep this table current.
+| Member | Side | Role | Builds | Sections |
+| :--- | :--- | :--- | :--- | :--- |
+| Member 1 | **Backend** | UI design + backend | Mockups of every page and of the Windows window, visual review; detection of the AI app in use and the optional backend tasks | 1–8 (UI rows), 9C, 9E |
+| Member 2 | **Front end** | Front end | Landing page, look and navigation, sign-in and account pages, admin panel | 1, 2, 3, 7 (front-end rows) |
+| Member 3 | **Front end** | Front end | Usage tracker, dashboard, Ask Gemini, Compare models, Windows window | 4, 5, 6, 8 (front-end rows) |
+| Member 4 | **Backend** | Backend only | Services, domain model and class diagram, Neon database, Gemini, integration | 9A, 9B, 9D |
+
+Testing and release (sections 10 and 11) are shared by all members. Keep this table current.
 
 **General Definition of Done**
 - **UI task:** the mockup is in the shared design file (or `docs/design/`), shows the normal, empty, loading and error states that apply, works at 900×600 and full screen, and is approved by the team.
@@ -48,38 +50,39 @@ The table rows list what is needed **in addition** to these.
 
 Work from step 1 downwards. A task may start only when **everything in its chain** is `Done`: the tasks in its *Depends on* column, the tasks those depend on, and so on. Tasks in the same step do not depend on each other, so they can run in parallel. A task number alone does not set the order; the dependencies do.
 
-| Step | Member 1 (UI) | Member 2 (front end) | Member 3 (front end) | Member 4 (backend) | All |
+| Step | Member 1 (UI + backend) | Member 2 (front end) | Member 3 (front end) | Member 4 (backend) | All |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | 1.1, 11.1 | 2.2 | – | 9.8, 9.15, 9.19 🔒 | – |
-| 2 | 1.2, 1.3, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1 | 1.4 | – | 9.9, 9.14, 9.16, 9.20 🔒 | – |
-| 3 | 4.4 | 1.5, 1.6, 2.3, 2.4, 3.2, 3.3, 7.2, 7.3 | 4.2, 5.2, 6.2, 6.3, 8.2, 8.3 | 9.10, 9.12, 9.13 | – |
-| 4 | 10.7 | 2.5, 3.4, 10.1 | 4.3, 5.3, 5.4, 10.4 | 9.11, 9.17, 10.5 🔒 | – |
+| 1 | 1.1 👀, 9.15, 11.1 | 2.2 | – | 9.8, 9.19 🔒, 9.23 👀 | – |
+| 2 | 1.2 👀, 1.3, 2.1, 3.1 👀, 4.1 👀, 5.1, 6.1 ⏳, 7.1, 8.1, 9.16 | 1.4 👀 | – | 9.9, 9.14, 9.20 🔒 | – |
+| 3 | 4.4 | 1.5 👀, 1.6, 2.3, 2.4, 3.2 ⏳, 3.3 👀, 7.2, 7.3 | 4.2 👀, 5.2, 6.2 👀, 6.3, 8.2, 8.3 | 9.10, 9.12, 9.13 | – |
+| 4 | 9.17, 10.7 | 2.5, 3.4, 10.1 | 4.3 👀, 5.3, 5.4, 10.4 | 9.11, 10.5 🔒 | – |
 | 5 | – | – | 4.5, 10.2 | 9.18 | – |
 | 6 | 10.6 | 10.3 | – | 11.2 | – |
 | 7 | – | – | – | 11.4 | 11.3 |
 | 8 | – | – | – | – | 11.5 |
 
-🔒 = also waiting for something outside the team (a Gemini API key). Optional tasks (9.21, 9.22) are not scheduled; they need a decision first. Because the merge into `main` (11.2) depends on all of sections 1–9, it also waits for 9.19 and 9.20.
+👀 = in review (check it first) · ⏳ = in progress · 🔒 = also waiting for something outside the team (a Gemini API key). Optional tasks (9.21, 9.22) are not scheduled; they need a decision first. Because the merge into `main` (11.2) depends on all of sections 1–9, it also waits for 9.19 and 9.20.
 
-### Backend chain (Member 4)
+### Backend chain (Members 4 and 1)
 
-Unfinished tasks only; finished tasks (9.1–9.7) are already in place.
+Tasks that are not `Done` yet.
 
-| Task | Step | Depends on directly | Whole chain that must be done first |
-| :--- | :--- | :--- | :--- |
-| 9.8 | 1 | – | nothing (can start now) |
-| 9.15 | 1 | – | nothing (can start now) |
-| 9.19 | 1 | – | nothing (can start now) |
-| 9.9 | 2 | 9.8 | 9.8 |
-| 9.14 | 2 | 9.8 | 9.8 |
-| 9.16 | 2 | 9.15, 9.8 | 9.8, 9.15 |
-| 9.20 | 2 | 9.19 | 9.19 |
-| 9.10 | 3 | 9.9 | 9.8, 9.9 |
-| 9.12 | 3 | 9.9 | 9.8, 9.9 |
-| 9.13 | 3 | 9.9 | 9.8, 9.9 |
-| 9.11 | 4 | 9.10 | 9.8, 9.9, 9.10 |
-| 9.17 | 4 | 9.15, 9.10 | 9.8, 9.9, 9.10, 9.15 |
-| 9.18 | 5 | 9.17, 9.13 | 9.8, 9.9, 9.10, 9.13, 9.15, 9.17 |
+| Task | Owner | Step | Depends on directly | Whole chain that must be done first |
+| :--- | :--- | :--- | :--- | :--- |
+| 9.8 | Member 4 | 1 | – | nothing (can start now) |
+| 9.15 | Member 1 | 1 | – | nothing (can start now) |
+| 9.19 | Member 4 | 1 | – | nothing (can start now) |
+| 9.23 | Member 4 | 1 | 9.7 | nothing (can start now) |
+| 9.9 | Member 4 | 2 | 9.8 | 9.8 |
+| 9.14 | Member 4 | 2 | 9.8 | 9.8 |
+| 9.16 | Member 1 | 2 | 9.15, 9.8 | 9.8, 9.15 |
+| 9.20 | Member 4 | 2 | 9.19 | 9.19 |
+| 9.10 | Member 4 | 3 | 9.9 | 9.8, 9.9 |
+| 9.12 | Member 4 | 3 | 9.9 | 9.8, 9.9 |
+| 9.13 | Member 4 | 3 | 9.9 | 9.8, 9.9 |
+| 9.11 | Member 4 | 4 | 9.10 | 9.8, 9.9, 9.10 |
+| 9.17 | Member 1 | 4 | 9.15, 9.10 | 9.8, 9.9, 9.10, 9.15 |
+| 9.18 | Member 4 | 5 | 9.17, 9.13 | 9.8, 9.9, 9.10, 9.13, 9.15, 9.17 |
 
 ---
 
@@ -91,9 +94,10 @@ Unfinished tasks only; finished tasks (9.1–9.7) are already in place.
 | Tracking | Manual usage records, totals, recommendations, daily/weekly/monthly trend data |
 | Gemini | Ask Gemini with a model choice, Compare models, per-user limits |
 | Impact | Google's energy → carbon → water method with sources in the code |
-| Platform | PostgreSQL, Windows window (WinForms + WebView2), package script, 104 automated tests |
+| Platform | Neon database, Windows window (WinForms + WebView2), package script, 104 automated tests |
+| UI redesign | Theme, top navigation bar, usage tracker, Ask Gemini, log in and register (merged 2026-11-27) |
 
-The pages exist and render; most of them still need design work and a check by hand.
+Tasks touched by the redesign are marked `Review` (or `In progress`): they still need to be checked against their Definition of Done before they become `Done`.
 
 ---
 
@@ -101,11 +105,11 @@ The pages exist and render; most of them still need design work and a check by h
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1.1 | UI | Member 1 | **Design system** – colours, fonts, buttons, cards, tables, forms | One page listing every style with its values; text contrast is readable | – | To do |
-| 1.2 | UI | Member 1 | **Navigation menu design** – icons, order, active page | Own icon for every item (three share one today); guest, user and admin variants | 1.1 | To do |
+| 1.1 | UI | Member 1 | **Design system** – colours, fonts, buttons, cards, tables, forms | One page listing every style with its values; text contrast is readable | – | Review |
+| 1.2 | UI | Member 1 | **Navigation menu design** – icons, order, active page | Own icon for every item (three share one today); guest, user and admin variants | 1.1 | Review |
 | 1.3 | UI | Member 1 | **Error, not-found and access-denied design** | Clear message and a way back on each | 1.1 | To do |
-| 1.4 | Front end | Member 2 | **Apply the design system** | Values from 1.1 are in `app.css` and used by all shared elements; Member 3 told how to use them | 1.1 | To do |
-| 1.5 | Front end | Member 2 | **Navigation menu** | Current page is highlighted; each role sees only its items | 1.2, 1.4 | To do |
+| 1.4 | Front end | Member 2 | **Apply the design system** | Values from 1.1 are in `app.css` and used by all shared elements; Member 3 told how to use them | 1.1 | Review |
+| 1.5 | Front end | Member 2 | **Navigation menu** | Current page is highlighted; each role sees only its items | 1.2, 1.4 | Review |
 | 1.6 | Front end | Member 2 | **Error pages** | The three pages are reachable and styled | 1.3, 1.4 | To do |
 
 ## 2. Landing page
@@ -126,24 +130,24 @@ These pages come from the ASP.NET Core template.
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 3.1 | UI | Member 1 | **Login, register and account design** | Only working options shown; password rules visible on register | 1.1 | To do |
-| 3.2 | Front end | Member 2 | **Login page** | "Use another service", "Forgot your password?" and "Resend email confirmation" removed (no external login, no email sending); passkey button kept or removed by team decision; login still works | 3.1, 1.4 | To do |
-| 3.3 | Front end | Member 2 | **Register page** | External-service block removed; password rules shown before submitting; registration still works | 3.1, 1.4 | To do |
+| 3.1 | UI | Member 1 | **Login, register and account design** | Only working options shown; password rules visible on register | 1.1 | Review |
+| 3.2 | Front end | Member 2 | **Login page** | "Use another service", "Forgot your password?" and "Resend email confirmation" removed (no external login, no email sending); passkey button kept or removed by team decision; login still works (the redesign still shows "Forgot password?") | 3.1, 1.4 | In progress |
+| 3.3 | Front end | Member 2 | **Register page** | External-service block removed; password rules shown before submitting; registration still works | 3.1, 1.4 | Review |
 | 3.4 | Front end | Member 2 | **Account pages** – password, two-factor, personal data | Every visible menu item works; items needing email or an external service are hidden | 3.1, 3.2 | To do |
 
 ## 4. Usage tracker
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 4.1 | UI | Member 1 | **Tracker design** – input form, totals, recommendations, recent records | Every field has a unit and an example; empty state drawn | 1.1 | To do |
-| 4.2 | Front end | Member 3 | **Input form** | Invalid input shows a readable message; saving cannot be clicked twice | 4.1, 1.4 | To do |
-| 4.3 | Front end | Member 3 | **Totals, recommendations and recent records** | Numbers have units; a saved record appears without reload | 4.2 | To do |
+| 4.1 | UI | Member 1 | **Tracker design** – input form, totals, recommendations, recent records | Every field has a unit and an example; empty state drawn | 1.1 | Review |
+| 4.2 | Front end | Member 3 | **Input form** | Invalid input shows a readable message; saving cannot be clicked twice | 4.1, 1.4 | Review |
+| 4.3 | Front end | Member 3 | **Totals, recommendations and recent records** | Numbers have units; a saved record appears without reload | 4.2 | Review |
 | 4.4 | UI | Member 1 | **"Detect AI app" design** – button, result, nothing found, privacy note | All states drawn; the note says that only app names are read | 4.1 | To do |
 | 4.5 | Front end | Member 3 | **"Detect AI app" button** | Calls the service from 9.17; shows the detected app and session duration; fills the model name, which the user can still change; "nothing detected" shown | 4.4, 9.17 | To do |
 
 ## 5. Dashboard
 
-The data is ready (`UsageTrackingService.GetTrendAsync`); today it is shown as tables with simple bars.
+The data is ready (`UsageTrackingService.GetTrendAsync`); today it is shown as tables with simple bars. The redesign only restyled this page.
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -156,8 +160,8 @@ The data is ready (`UsageTrackingService.GetTrendAsync`); today it is shown as t
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 6.1 | UI | Member 1 | **Ask Gemini and Compare design** | Long replies, waiting, limit and error messages, failed model and best result are drawn | 1.1 | To do |
-| 6.2 | Front end | Member 3 | **Ask Gemini page** | Loading state while waiting; long replies readable; character limit shown | 6.1, 1.4 | To do |
+| 6.1 | UI | Member 1 | **Ask Gemini and Compare design** | Long replies, waiting, limit and error messages, failed model and best result are drawn | 1.1 | In progress |
+| 6.2 | Front end | Member 3 | **Ask Gemini page** | Loading state while waiting; long replies readable; character limit shown | 6.1, 1.4 | Review |
 | 6.3 | Front end | Member 3 | **Compare models page** | Table readable at 900×600; lowest impact highlighted; failed models marked; ranking explanation visible | 6.1, 1.4 | To do |
 
 ## 7. Admin panel
@@ -178,11 +182,17 @@ The data is ready (`UsageTrackingService.GetTrendAsync`); today it is shown as t
 
 ---
 
-## 9. Backend (Member 4)
+## 9. Backend (Member 4 and Member 1)
 
-Front-end work that depends on backend tasks is listed in sections 1–8 and belongs to Members 1–3.
+Front-end work that depends on backend tasks is listed in sections 1–8: Members 2 and 3 build it, Member 1 designs it.
 
-### 9A. Already built
+| Part | Owner |
+| :--- | :--- |
+| 9A already built, 9B class diagram, 9D Gemini | Member 4 |
+| 9C detection of the AI app, 9E optional | Member 1 |
+| 9.18 service notes (covers 9B and 9C) | Member 4, with input from Member 1 |
+
+### 9A. Already built (Member 4)
 
 | ID | Role | Owner | Task | Definition of Done (met) | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -193,8 +203,9 @@ Front-end work that depends on backend tasks is listed in sections 1–8 and bel
 | 9.5 | Backend | Member 4 | **Gemini client, model list and limits** (`GeminiService`, `AskLimiter`) | Allowed models only; prompt cap; per-user daily limit and pause; safe error messages; tested with a fake server (the live path is 9.19) | – | Done |
 | 9.6 | Backend | Member 4 | **Model comparison** (`ModelComparisonService`) | Same prompt to two or more models; ranked; saved as usage; a failing model does not stop the others; tested | 9.5 | Done |
 | 9.7 | Backend | Member 4 | **Database, Windows shell logic and package** | Migrations at startup; hidden server, port, shutdown; `publish.ps1` builds both programs; start-up check passed | – | Done |
+| 9.23 | Backend | Member 4 | **Neon-only setup of the package** | Setup accepts the Neon console string, refuses other hosts, requires SSL; a packaged app set up with it starts; documents say Neon; committed and pushed | 9.7 | Review |
 
-### 9B. Use the class diagram in the application
+### 9B. Use the class diagram in the application (Member 4)
 
 Today `User`, `Admin`, `RegisteredUser` and `AIUsageLog.ScanDeviceActivity` exist but the web app does not use them. Identity remains the only place for passwords and sign-in. **The approach needs approval (9.8) before the rest starts.**
 
@@ -208,30 +219,30 @@ Today `User`, `Admin`, `RegisteredUser` and `AIUsageLog.ScanDeviceActivity` exis
 | 9.13 | Backend | Member 4 | **`Admin.manageUserAccounts()`, `addUser()`, `editUser()`, `suspendUser()`** | Admin panel actions go through these methods and are saved with Identity; reactivate still works; own-account and last-admin guards hold; existing admin tests pass | 9.9 | To do |
 | 9.14 | Backend | Member 4 | **`User.login()` and `registerAccount()`** | Documented how Identity fulfils them; no second password check or plain-text password is introduced | 9.8 | To do |
 
-### 9C. Detect the AI app in use
+### 9C. Detect the AI app in use (Member 1)
 
 Works because in the Windows app the server runs on the user's own PC.
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 9.15 | Backend | Member 4 | **`scanDeviceActivity()` check** – verify detection on a real PC | Tried with a desktop AI app, a browser tab and nothing open; known limits written down (only a browser's active window title is visible) | – | To do |
-| 9.16 | Backend | Member 4 | **Usage log and session duration** – `createUsageLog()`; decide whether to store app and duration | Decision recorded; if stored: new columns with a migration, tested on an existing database | 9.15, 9.8 | To do |
-| 9.17 | Backend | Member 4 | **Detection service** for the tracker | Returns app name and duration, or "nothing detected"; reads only app names and window titles, stores no titles; runs only on request; tests pass | 9.15, 9.10 | To do |
+| 9.15 | Backend | Member 1 | **`scanDeviceActivity()` check** – verify detection on a real PC | Tried with a desktop AI app, a browser tab and nothing open; known limits written down (only a browser's active window title is visible) | – | To do |
+| 9.16 | Backend | Member 1 | **Usage log and session duration** – `createUsageLog()`; decide whether to store app and duration | Decision recorded; if stored: new columns with a migration, tested on an existing database | 9.15, 9.8 | To do |
+| 9.17 | Backend | Member 1 | **Detection service** for the tracker | Returns app name and duration, or "nothing detected"; reads only app names and window titles, stores no titles; runs only on request; tests pass | 9.15, 9.10 | To do |
 | 9.18 | Backend | Member 4 | **Service notes for the front end** – what each page calls and what comes back | Short list in `docs/` of the methods, inputs, results and error messages used by Members 2 and 3; updated after 9B and 9C | 9.17, 9.13 | To do |
 
-### 9D. Gemini with a real key
+### 9D. Gemini with a real key (Member 4)
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | 9.19 | Backend | Member 4 | **Verify the live path** | New key in user-secrets (shared keys revoked); a real reply with token counts is saved; both allowed models checked; numbers match the formula | – | Blocked (needs a key) |
 | 9.20 | Backend | Member 4 | **Re-test models** that answered HTTP 503 (`gemini-3.1-flash-lite`, `gemini-3.8-flash`, `gemini-4-hydrogen`) | Each tested again; stable ones added to `Gemini:AllowedModels`; result noted in `docs/` | 9.19 | Blocked (needs a key) |
 
-### 9E. Optional
+### 9E. Optional (Member 1)
 
 | ID | Role | Owner | Task | Definition of Done | Depends on | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 9.21 | Backend | Member 4 | Shorter session check for suspended users (now about 30 minutes) | A signed-in suspended user loses access within about a minute; tested | – | To do (needs decision) |
-| 9.22 | Backend | Member 4 | Log file for the installed app | Server messages written to `%LOCALAPPDATA%\OxyGenAI\logs`; no secrets in the log | – | To do (needs decision) |
+| 9.21 | Backend | Member 1 | Shorter session check for suspended users (now about 30 minutes) | A signed-in suspended user loses access within about a minute; tested | – | To do (needs decision) |
+| 9.22 | Backend | Member 1 | Log file for the installed app | Server messages written to `%LOCALAPPDATA%\OxyGenAI\logs`; no secrets in the log | – | To do (needs decision) |
 
 ---
 
@@ -265,7 +276,8 @@ The checker is never the person who built the page. Features added after Module 
 
 | Item | Reason |
 | :--- | :--- |
-| Web deployment | The result is a Windows application |
+| Web deployment | The result is a Windows application that runs on the user's PC |
+| Local database | The database is Neon, for development and for the packaged app |
 | Email sending, CSV export, audit log, report table | Never part of the README or the class diagram |
 | Limit on failed login attempts | Decided against for this demo |
 | Different energy figures per Gemini model | No published source |

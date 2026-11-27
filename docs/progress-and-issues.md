@@ -1,6 +1,6 @@
 # OxyGenAI – Progress and Issues
 
-_Snapshot: 2026-11-25. Project: Junior Project DTETI UGM, Group 2._
+_Snapshot: 2026-11-27. Project: Junior Project DTETI UGM, Group 2._
 
 OxyGenAI estimates the environmental impact (energy, CO₂, water) of generative-AI use.
 Requirement for the course: **the codebase is C# and the output is a Windows application** (Blazor is allowed).
@@ -19,7 +19,9 @@ Requirement for the course: **the codebase is C# and the output is a Windows app
 | Impact formula | Implemented from Google's published method; same factor for every model |
 | Windows-app output | **Met**: `OxyGenAI-Desktop.exe` is a WinForms window hosting the app in WebView2; the package also keeps the browser start. Tested with the shell's `--check` in source and package mode; not yet clicked through by a person |
 | Automated tests | 104 xUnit tests, all passing (`dotnet test AIEnvironmentalTracker.slnx`); they include the Windows shell's address policy, server locator and start-up wait |
-| Deployment | Not planned. The final result is the Windows application (ADR-008) |
+| Database | Neon (cloud PostgreSQL) for development and for the packaged app; no local database (ADR-002) |
+| User interface | Redesigned on 2026-11-26/27 (top bar, new look for tracker, Ask Gemini, log in and register); builds and tests pass, pages load; not yet compared with the mockup by eye |
+| Deployment | Not planned. The app runs locally on Windows (ADR-008) |
 
 ---
 
@@ -38,7 +40,7 @@ Requirement for the course: **the codebase is C# and the output is a Windows app
 | Dashboard (`/dashboard`) | Daily (14 days), weekly (12 weeks) and monthly (12 months) totals in the browser's time zone, plus per-model totals. |
 | Admin panel (`/admin`) | List, add, edit email, suspend or reactivate, grant or revoke the Admin role, platform-wide totals. |
 | Built-in admin account | `admin@email.com` / `Admin#2026`, created at startup (ADR-009). |
-| Database | PostgreSQL via EF Core; migrations applied at startup. Hosted on Neon for development. |
+| Database | Neon (cloud PostgreSQL) via EF Core; migrations applied at startup. The package setup accepts only Neon connection strings. |
 | Packaging | `publish.ps1` builds a self-contained zip; `Setup`/`Start` `.bat` scripts; user guide in `docs/USER_GUIDE.md`. |
 
 ### Not done
@@ -64,6 +66,8 @@ Not planned (they were never part of the README or the class diagram): sending e
 | Admin service (18 checks) and access rules over HTTP | Passed: anonymous → login, normal user → access denied, admin → panel; suspended user → lockout page |
 | Impact formula (12 checks) | Reproduces Google's figures: 0.24 Wh → 0.0326 g CO₂e and 0.253 mL water |
 
+Neon setup (2026-11-27): the new `setup.ps1` passed 10 input checks (Neon formats accepted, local and other hosts refused); a freshly published package, set up with it, started its window against Neon (`--check`: log-in page loaded).
+
 **Not verified:** clicking the dashboard and admin pages in a browser, the Ask Gemini page with a real API key, the packaged installer on a clean PC.
 
 ---
@@ -85,6 +89,9 @@ Not planned (they were never part of the README or the class diagram): sending e
 | 11 | ~~No automated tests.~~ | Resolved: 104 xUnit tests (estimator, trend, admin rules, limiter, Gemini client with a fake HTTP handler, comparison, Windows shell logic). | Keep adding tests with each feature. Black-box testing of the UI is still manual. |
 | 12 | ~~Repository hygiene: `app.db` and an outdated README.~~ | Resolved: `app.db` removed, README corrected. | – |
 | 13 | **Neon free database sleeps when idle.** | The first request after a pause can take seconds. | Warn testers; retry once. |
+| 15 | **Every installed copy holds the database password** (`oxygenai.settings.json`), and all copies share one database. | Anyone with the file can read or change all data. | Give the connection string only to trusted people; reset the password in Neon if it leaks; never put it in the zip or the repository. |
+| 16 | **No internet, no app.** The database is in the cloud. | The app cannot start offline. | Check the connection before a demo. |
+| 17 | **"Forgot password?" is shown on the log-in page** but the app sends no email. | Users reach a dead end. | Remove the link (to-do 3.2). |
 | 14 | **Secrets.** Connection strings and API keys live in user-secrets, environment variables or `oxygenai.settings.json` (git-ignored). | A key pasted into chat or committed is compromised. | Never paste or commit keys; rotate any key that was exposed. |
 
 ---

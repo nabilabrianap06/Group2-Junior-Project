@@ -87,7 +87,7 @@ public sealed class MainForm : Form
         catch (ServerStartException ex)
         {
             Fail($"OxyGenAI could not start.{Environment.NewLine}{Environment.NewLine}{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
-                 "Check that PostgreSQL is running and that Setup OxyGenAI.bat was completed (see USER_GUIDE.md, Troubleshooting).");
+                 "Check the internet connection and that Setup OxyGenAI.bat was completed with your Neon connection string (see USER_GUIDE.md, Troubleshooting).");
         }
         catch (WebView2RuntimeNotFoundException)
         {
