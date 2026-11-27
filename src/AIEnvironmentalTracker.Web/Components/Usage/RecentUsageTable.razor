@@ -1,40 +1,45 @@
 @inject BrowserTimeService BrowserTime
 
-<h2 class="h5">Recent usage</h2>
-@if (Records.Count == 0)
-{
-    <p>No usage recorded yet.</p>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Time (@BrowserTime.ZoneId)</th>
-                    <th>Model</th>
-                    <th>Queries</th>
-                    <th>Water (mL)</th>
-                    <th>CO₂ (g)</th>
-                    <th>Energy (Wh)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var record in Records)
-                {
-                    <tr>
-                        <td>@BrowserTime.ToLocal(record.Timestamp).ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@record.AiModelName</td>
-                        <td>@record.QueryCount</td>
-                        <td>@record.TotalWater.ToString("0.######")</td>
-                        <td>@record.TotalCo2.ToString("0.######")</td>
-                        <td>@record.TotalEnergy.ToString("0.######")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+<section id="history" class="ox-panel" aria-labelledby="history-title">
+    <div class="ox-panel-head">
+        <h2 id="history-title">Recent usage</h2>
+        <span class="ox-note">@(Records.Count > 0 ? $"Last {Records.Count} · " : "")times in @BrowserTime.ZoneId</span>
     </div>
-}
+    @if (Records.Count == 0)
+    {
+        <p class="ox-empty mb-0">No usage recorded yet. Your records will appear here.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table mb-0" style="min-width: 640px">
+                <thead>
+                    <tr>
+                        <th scope="col">When</th>
+                        <th scope="col">Model</th>
+                        <th scope="col" class="text-end">Queries</th>
+                        <th scope="col" class="text-end">Water</th>
+                        <th scope="col" class="text-end">CO₂</th>
+                        <th scope="col" class="text-end">Energy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in Records)
+                    {
+                        <tr>
+                            <td>@BrowserTime.ToLocal(record.Timestamp).ToString("dd MMM, HH:mm")</td>
+                            <td class="fw-semibold">@record.AiModelName</td>
+                            <td class="text-end">@record.QueryCount</td>
+                            <td class="text-end">@record.TotalWater.ToString("0.###") mL</td>
+                            <td class="text-end">@record.TotalCo2.ToString("0.###") g</td>
+                            <td class="text-end">@record.TotalEnergy.ToString("0.###") Wh</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
 
 @code {
     [Parameter] public IReadOnlyList<UsageRecord> Records { get; set; } = [];

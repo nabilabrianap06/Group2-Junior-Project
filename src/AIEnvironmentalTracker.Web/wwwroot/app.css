@@ -1,27 +1,708 @@
+/* =====================================================================
+   OxyGenAI theme
+   Ground #F3F5F2 · ink #13201B · accent green #0E6B4F
+   Metric colours: water blue #1D5FA8 · energy amber #A84B05 · CO2 slate #3F4A45
+   Type: Space Grotesk (headings, figures) + Inter (text); system fonts when offline.
+   ===================================================================== */
+
+:root {
+    --ox-ground: #F3F5F2;
+    --ox-surface: #FFFFFF;
+    --ox-ink: #13201B;
+    --ox-ink-2: #3F4A45;
+    --ox-muted: #56645E;
+    --ox-line: #DDE3DF;
+    --ox-line-2: #C9D3CE;
+    --ox-soft: #EEF1EF;
+    --ox-accent: #0E6B4F;
+    --ox-accent-dark: #09503B;
+    --ox-accent-soft: #E6F0EB;
+    --ox-accent-ink: #0B5A42;
+    --ox-water: #1D5FA8;
+    --ox-water-soft: #EDF3FA;
+    --ox-energy: #A84B05;
+    --ox-energy-soft: #FBF4EC;
+    --ox-co2: #3F4A45;
+    --ox-co2-soft: #F0F2F1;
+    --ox-danger: #8C2A1C;
+    --ox-danger-soft: #FCEDEA;
+    --ox-radius: 16px;
+    --ox-radius-sm: 10px;
+    --ox-font: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    --ox-display: "Space Grotesk", Inter, "Segoe UI", system-ui, sans-serif;
+
+    /* Bootstrap hooks, so every page (also the ones not redesigned) picks up the theme */
+    --bs-body-font-family: var(--ox-font);
+    --bs-body-bg: var(--ox-ground);
+    --bs-body-color: var(--ox-ink);
+    --bs-secondary-color: var(--ox-muted);
+    --bs-border-color: var(--ox-line);
+    --bs-link-color: var(--ox-accent);
+    --bs-link-color-rgb: 14, 107, 79;
+    --bs-link-hover-color: var(--ox-accent-dark);
+    --bs-link-hover-color-rgb: 9, 80, 59;
+    --bs-primary: var(--ox-accent);
+    --bs-primary-rgb: 14, 107, 79;
+    --bs-border-radius: var(--ox-radius-sm);
+}
+
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--ox-font);
+    background: var(--ox-ground);
+    color: var(--ox-ink);
+    font-variant-numeric: tabular-nums;
 }
 
-a, .btn-link {
-    color: #006bb7;
+h1, h2, h3, .h1, .h2, .h3, .h4, .h5 {
+    font-family: var(--ox-display);
+    letter-spacing: -0.01em;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-.content {
-    padding-top: 1.1rem;
+h1, .h1 {
+    font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
 }
 
 h1:focus {
     outline: none;
+}
+
+a, .btn-link {
+    color: var(--ox-accent);
+}
+
+    a:hover, .btn-link:hover {
+        color: var(--ox-accent-dark);
+    }
+
+.text-muted {
+    color: var(--ox-muted) !important;
+}
+
+/* ---------- Bootstrap components, re-skinned ---------- */
+
+.card {
+    background: var(--ox-surface);
+    border: 1px solid var(--ox-line);
+    border-radius: var(--ox-radius);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.btn {
+    min-height: 44px;
+    border-radius: var(--ox-radius-sm);
+    font-weight: 600;
+    padding-inline: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+}
+
+.btn-sm {
+    min-height: 34px;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: var(--ox-accent);
+    border-color: var(--ox-accent);
+}
+
+    .btn-primary:hover, .btn-primary:active, .btn-primary:focus-visible {
+        background-color: var(--ox-accent-dark);
+        border-color: var(--ox-accent-dark);
+        color: #fff;
+    }
+
+    .btn-primary:disabled {
+        background-color: #7FA89A;
+        border-color: #7FA89A;
+    }
+
+.btn-outline-primary, .btn-outline-secondary, .btn-secondary, .btn-light {
+    color: var(--ox-ink);
+    background: var(--ox-surface);
+    border: 1px solid var(--ox-line-2);
+}
+
+    .btn-outline-primary:hover, .btn-outline-secondary:hover, .btn-secondary:hover, .btn-light:hover {
+        background: var(--ox-soft);
+        color: var(--ox-ink);
+        border-color: var(--ox-line-2);
+    }
+
+.form-control, .form-select {
+    min-height: 44px;
+    border: 1px solid var(--ox-line-2);
+    border-radius: var(--ox-radius-sm);
+    color: var(--ox-ink);
+}
+
+textarea.form-control {
+    min-height: 0;
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: .875rem;
+    margin-bottom: .35rem;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: var(--ox-accent);
+    box-shadow: 0 0 0 .2rem rgba(14, 107, 79, .25);
+}
+
+.form-check-input {
+    border-color: #7A8781;
+}
+
+.form-check-input:checked {
+    background-color: var(--ox-accent);
+    border-color: var(--ox-accent);
+}
+
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: var(--ox-soft);
+    font-size: .9rem;
+}
+
+    .table > thead th {
+        color: var(--ox-muted);
+        font-weight: 600;
+        font-size: .8rem;
+        border-bottom-color: var(--ox-line);
+    }
+
+.alert {
+    border-radius: 12px;
+    border: 0;
+}
+
+.alert-success { background: var(--ox-accent-soft); color: var(--ox-accent-ink); }
+.alert-info { background: var(--ox-water-soft); color: #174D89; }
+.alert-warning { background: var(--ox-energy-soft); color: #7A3703; }
+.alert-danger { background: var(--ox-danger-soft); color: var(--ox-danger); }
+
+.badge.text-bg-secondary {
+    background: var(--ox-co2-soft) !important;
+    color: var(--ox-ink-2) !important;
+}
+
+.nav-pills .nav-link.active {
+    background: var(--ox-accent-soft);
+    color: var(--ox-accent-ink);
+}
+
+.nav-pills .nav-link {
+    color: var(--ox-ink-2);
+    border-radius: 8px;
+}
+
+/* ---------- OxyGenAI building blocks ---------- */
+
+.ox-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.ox-eyebrow {
+    margin: 0 0 .35rem;
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ox-accent);
+}
+
+.ox-lede {
+    margin: .5rem 0 0;
+    color: var(--ox-muted);
+}
+
+.ox-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.ox-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
+.ox-panel {
+    background: var(--ox-surface);
+    border: 1px solid var(--ox-line);
+    border-radius: var(--ox-radius);
+    padding: 1.6rem;
+    min-width: 0;
+}
+
+    .ox-panel > h2, .ox-panel-head h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 600;
+    }
+
+.ox-panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.ox-note {
+    font-size: .85rem;
+    color: var(--ox-muted);
+}
+
+.ox-split {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+    .ox-split > .ox-side {
+        flex: 1 1 360px;
+        min-width: 0;
+    }
+
+    .ox-split > .ox-main {
+        flex: 999 1 480px;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+/* Metric tiles */
+.ox-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ox-tile {
+    flex: 1 1 200px;
+    background: var(--ox-surface);
+    border: 1px solid var(--ox-line);
+    border-radius: var(--ox-radius);
+    padding: 1.35rem 1.35rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+}
+
+.ox-tile-dark {
+    background: var(--ox-ink);
+    border-color: var(--ox-ink);
+    color: #fff;
+}
+
+.ox-tile-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: .9rem;
+    font-weight: 500;
+    color: var(--ox-muted);
+}
+
+.ox-tile-dark .ox-tile-top, .ox-tile-dark .ox-tile-sub {
+    color: #C5D2CC;
+}
+
+.ox-tile-value {
+    display: flex;
+    align-items: baseline;
+    gap: .35rem;
+    font-family: var(--ox-display);
+    font-size: 2.6rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+    .ox-tile-value small {
+        font-family: var(--ox-font);
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--ox-muted);
+    }
+
+.ox-tile-sub {
+    font-size: .82rem;
+    color: var(--ox-muted);
+}
+
+.ox-water { color: var(--ox-water); }
+.ox-energy { color: var(--ox-energy); }
+.ox-co2 { color: var(--ox-co2); }
+
+/* Inputs with a unit inside the box */
+.ox-unit-field {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 44px;
+    padding: 0 .75rem;
+    border: 1px solid var(--ox-line-2);
+    border-radius: var(--ox-radius-sm);
+    background: var(--ox-surface);
+}
+
+    .ox-unit-field:focus-within {
+        border-color: var(--ox-accent);
+        box-shadow: 0 0 0 .2rem rgba(14, 107, 79, .25);
+    }
+
+    .ox-unit-field input {
+        flex: 1 1 auto;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        font: inherit;
+        color: var(--ox-ink);
+    }
+
+    .ox-unit-field span {
+        font-size: .82rem;
+        color: var(--ox-muted);
+    }
+
+.ox-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
+    .ox-field-row > div {
+        flex: 1 1 100px;
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+    }
+
+    .ox-field-row label {
+        font-size: .82rem;
+        color: var(--ox-muted);
+    }
+
+/* Chips (quick picks, small labels) */
+.ox-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: .45rem;
+}
+
+.ox-chip {
+    min-height: 32px;
+    padding: 0 .8rem;
+    border-radius: 999px;
+    border: 1px solid var(--ox-line);
+    background: var(--ox-ground);
+    color: var(--ox-ink-2);
+    font: inherit;
+    font-size: .82rem;
+    cursor: pointer;
+}
+
+    .ox-chip:hover {
+        border-color: var(--ox-line-2);
+    }
+
+    .ox-chip[aria-pressed="true"] {
+        border-color: var(--ox-accent);
+        background: var(--ox-accent-soft);
+        color: var(--ox-accent-ink);
+        font-weight: 600;
+    }
+
+.ox-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .2rem .65rem;
+    border-radius: 999px;
+    background: var(--ox-co2-soft);
+    color: var(--ox-ink-2);
+    font-size: .8rem;
+}
+
+    .ox-tag.ox-tag-water { background: var(--ox-water-soft); color: #174D89; }
+    .ox-tag.ox-tag-energy { background: var(--ox-energy-soft); color: #8A3D04; }
+    .ox-tag.ox-tag-ok { background: var(--ox-accent-soft); color: var(--ox-accent-ink); font-weight: 600; }
+
+.ox-preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .8rem 1rem;
+    border-radius: 12px;
+    background: var(--ox-ground);
+    font-size: .9rem;
+}
+
+    .ox-preview strong {
+        font-weight: 600;
+    }
+
+.ox-status {
+    margin: 0;
+    padding: .7rem .9rem;
+    border-radius: 10px;
+    background: var(--ox-accent-soft);
+    color: var(--ox-accent-ink);
+    font-size: .9rem;
+}
+
+    .ox-status.ox-status-error {
+        background: var(--ox-danger-soft);
+        color: var(--ox-danger);
+    }
+
+/* Bars */
+.ox-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ox-bar-label {
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+    font-size: .9rem;
+    margin-bottom: .35rem;
+}
+
+.ox-bar-track {
+    height: 12px;
+    border-radius: 6px;
+    background: #E9EEEB;
+    overflow: hidden;
+}
+
+.ox-bar-fill {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--ox-water);
+}
+
+/* Recommendations */
+.ox-recs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .7rem;
+}
+
+    .ox-recs li {
+        display: flex;
+        gap: .9rem;
+        align-items: flex-start;
+        padding: .9rem;
+        border-radius: 12px;
+        background: var(--ox-co2-soft);
+    }
+
+        .ox-recs li.ox-rec-water { background: var(--ox-water-soft); }
+        .ox-recs li.ox-rec-energy { background: var(--ox-energy-soft); }
+        .ox-recs li.ox-rec-general { background: var(--ox-accent-soft); }
+
+.ox-rec-icon {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ox-rec-title {
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.ox-rec-text {
+    font-size: .9rem;
+    color: var(--ox-ink-2);
+}
+
+/* Empty states */
+.ox-empty {
+    padding: 1.5rem;
+    border: 1px dashed var(--ox-line-2);
+    border-radius: 12px;
+    color: var(--ox-muted);
+    text-align: center;
+    font-size: .9rem;
+}
+
+/* Dark impact panel (Ask Gemini) */
+.ox-dark-panel {
+    background: var(--ox-ink);
+    color: #fff;
+    border-radius: var(--ox-radius);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+    .ox-dark-panel h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .ox-dark-panel .ox-note, .ox-dark-panel dt {
+        color: #C5D2CC;
+    }
+
+.ox-split-bar {
+    display: flex;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #2A3833;
+}
+
+.ox-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem 1rem;
+    margin-top: .6rem;
+    font-size: .82rem;
+    color: #C5D2CC;
+}
+
+    .ox-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .ox-legend i {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+.ox-mini-metrics {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .7rem;
+}
+
+    .ox-mini-metrics > div {
+        background: #1F2E28;
+        border-radius: 12px;
+        padding: .75rem;
+    }
+
+    .ox-mini-metrics dt {
+        font-size: .75rem;
+        font-weight: 400;
+    }
+
+    .ox-mini-metrics dd {
+        margin: .25rem 0 0;
+        font-family: var(--ox-display);
+        font-size: 1.3rem;
+        font-weight: 600;
+    }
+
+        .ox-mini-metrics dd small {
+            font-family: var(--ox-font);
+            font-size: .8rem;
+            color: #C5D2CC;
+        }
+
+/* Conversation (Ask Gemini) */
+.ox-bubble-user {
+    align-self: flex-end;
+    max-width: 80%;
+    background: var(--ox-ink);
+    color: #fff;
+    padding: .85rem 1.1rem;
+    border-radius: 16px 16px 4px 16px;
+    white-space: pre-wrap;
+}
+
+.ox-reply {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+}
+
+.ox-reply-body {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    min-width: 0;
+}
+
+.ox-reply-text {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.ox-formula {
+    padding: .75rem .9rem;
+    border-radius: 10px;
+    background: var(--ox-ground);
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.ox-link-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: var(--ox-radius);
+    background: var(--ox-surface);
+    border: 1px solid var(--ox-line);
+    color: var(--ox-ink);
+    text-decoration: none;
+}
+
+    .ox-link-card:hover {
+        border-color: var(--ox-line-2);
+        color: var(--ox-ink);
+    }
+
+/* ---------- Template leftovers kept working ---------- */
+
+.content {
+    padding-top: 1.1rem;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -33,7 +714,8 @@ h1:focus {
 }
 
 .validation-message {
-    color: #e50000;
+    color: var(--ox-danger);
+    font-size: .85rem;
 }
 
 .blazor-error-boundary {
@@ -57,4 +739,16 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+.ox-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.ox-brand-name {
+    font-family: var(--ox-display);
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }

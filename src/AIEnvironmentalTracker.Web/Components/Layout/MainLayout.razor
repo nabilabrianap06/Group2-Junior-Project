@@ -1,18 +1,11 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="ox-shell">
+    <NavMenu />
 
-    <main>
-        <div class="top-row px-4">
-            <span class="text-muted small">OxyGenAI · estimates of the environmental impact of your AI use</span>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+    <main class="ox-content">
+        @Body
+        <p class="ox-footnote">All figures are estimates, not measurements.</p>
     </main>
 </div>
 

@@ -1,0 +1,44 @@
+@inherits LayoutComponentBase
+
+@* Split layout for Log in and Register: product story on the left, the form on the right. *@
+
+<div class="ox-auth">
+    <section class="ox-auth-story" aria-label="About OxyGenAI">
+        <a href="" class="ox-auth-brand" aria-label="OxyGenAI home"><BrandMark Size="34" TextSize="22" /></a>
+
+        <div class="ox-auth-pitch">
+            <p class="ox-auth-headline">Every prompt has a footprint.</p>
+            <p class="ox-auth-sub">Track the water, CO₂ and energy behind your AI use, and get advice on using it more lightly.</p>
+        </div>
+
+        <ul class="ox-auth-metrics">
+            <li>
+                <Icon Name="water" Size="22" Color="#8FBFF0" />
+                <span class="ox-auth-metric-name">Water</span>
+                <span class="ox-auth-metric-unit">mL per query</span>
+            </li>
+            <li>
+                <Icon Name="co2" Size="22" Color="#C5D2CC" />
+                <span class="ox-auth-metric-name">CO₂</span>
+                <span class="ox-auth-metric-unit">grams emitted</span>
+            </li>
+            <li>
+                <Icon Name="energy" Size="22" Color="#F2B266" />
+                <span class="ox-auth-metric-name">Energy</span>
+                <span class="ox-auth-metric-unit">watt-hours used</span>
+            </li>
+        </ul>
+    </section>
+
+    <main class="ox-auth-main">
+        <div class="ox-auth-form">
+            @Body
+        </div>
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

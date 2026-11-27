@@ -8,104 +8,195 @@
 @inject GeminiService Gemini
 @inject AskLimiter Limiter
 
-<PageTitle>Ask Gemini · OxyGenAI</PageTitle>
+<PageTitle>Ask Gemini – OxyGenAI</PageTitle>
 
-<h1>Ask Gemini</h1>
-<p>
-    Send a prompt to Google Gemini. The app reads the token counts from the
-    reply, estimates the environmental impact and saves it to your usage history.
-    To send one prompt to several models, use <a href="compare">Compare models</a>.
-</p>
+<div class="ox-page">
+    <div>
+        <h1>Ask Gemini</h1>
+        <p class="ox-lede">
+            Every reply shows its token count and estimated impact, and is added to your history.
+            To send one prompt to several models, use <a href="compare">Compare models</a>.
+        </p>
+    </div>
 
-@if (!Gemini.IsConfigured)
-{
-    <div class="alert alert-warning" role="alert">@GeminiService.MissingKeyMessage</div>
-}
+    @if (!Gemini.IsConfigured)
+    {
+        <div class="alert alert-warning mb-0" role="alert">@GeminiService.MissingKeyMessage</div>
+    }
 
-<div class="card mb-4">
-    <div class="card-body">
-        <form @onsubmit="SendAsync" @onsubmit:preventDefault>
-            <label class="form-label" for="model">Model</label>
-            <select id="model" class="form-select mb-3 w-auto" @bind="selectedModel" disabled="@sending">
-                @foreach (var model in Gemini.AvailableModels)
+    <div class="ox-split">
+        <div class="ox-main">
+            <section class="ox-panel d-flex flex-column gap-4" aria-label="Conversation">
+                @if (lastPrompt is null)
                 {
-                    <option value="@model">@model</option>
+                    <div class="ox-empty">
+                        <Icon Name="spark" Size="26" Color="#0E6B4F" />
+                        <p class="mt-2 mb-0">Ask anything. You'll see what each reply cost in water, CO₂ and energy.</p>
+                    </div>
                 }
-            </select>
-            <label class="form-label" for="prompt">Your prompt</label>
-            <textarea id="prompt" class="form-control" rows="4" maxlength="@Gemini.MaxPromptCharacters"
-                      @bind="prompt" @bind:event="oninput" disabled="@sending"></textarea>
-            <button class="btn btn-primary mt-3" type="submit"
-                    disabled="@(sending || string.IsNullOrWhiteSpace(prompt) || !Gemini.IsConfigured)">
-                @(sending ? "Waiting for Gemini…" : "Send to Gemini")
-            </button>
-        </form>
+                else
+                {
+                    <div class="ox-bubble-user">@lastPrompt</div>
 
-        @if (!string.IsNullOrEmpty(error))
-        {
-            <div class="alert alert-danger mt-3 mb-0" role="alert">@error</div>
-        }
+                    @if (sending)
+                    {
+                        <p class="ox-note mb-0" role="status">Waiting for Gemini…</p>
+                    }
+                    else if (reply is not null)
+                    {
+                        <div class="ox-reply">
+                            <span class="ox-rec-icon" style="background: var(--ox-accent-soft)"><Icon Name="spark" Size="18" Color="#0E6B4F" /></span>
+                            <div class="ox-reply-body">
+                                <div class="ox-note"><strong class="text-body">Gemini</strong> · @reply.Model</div>
+                                <p class="ox-reply-text">@reply.Text</p>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="ox-tag">@reply.TotalTokens.ToString("#,0") tokens</span>
+                                    @if (saved is not null)
+                                    {
+                                        <span class="ox-tag ox-tag-water">@saved.TotalWater.ToString("0.###") mL water</span>
+                                        <span class="ox-tag">@saved.TotalCo2.ToString("0.###") g CO₂</span>
+                                        <span class="ox-tag ox-tag-energy">@saved.TotalEnergy.ToString("0.###") Wh</span>
+                                    }
+                                    @if (saveMessage == SavedText)
+                                    {
+                                        <span class="ox-tag ox-tag-ok"><Icon Name="check" Size="14" Stroke="2.5" /> Saved to history</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(saveMessage) && saveMessage != SavedText)
+                                {
+                                    <p class="ox-status ox-status-error" role="status">@saveMessage</p>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
 
-        @if (reply is not null)
-        {
-            <h2 class="h6 mt-4">Reply</h2>
-            <div class="border rounded p-3 bg-body-tertiary" style="white-space: pre-wrap">@reply.Text</div>
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <div class="alert alert-danger mb-0" role="alert">@error</div>
+                }
 
-            <h2 class="h6 mt-4">Tokens and estimated impact</h2>
-            <div class="table-responsive">
-                <table class="table table-sm w-auto">
-                    <tbody>
-                        <tr><th scope="row">Prompt tokens</th><td>@reply.PromptTokens</td></tr>
-                        <tr><th scope="row">Response tokens</th><td>@reply.CandidateTokens</td></tr>
-                        <tr><th scope="row">Total tokens (incl. thinking)</th><td>@reply.TotalTokens</td></tr>
-                        @if (saved is not null)
-                        {
-                            <tr><th scope="row">Water (estimate)</th><td>@saved.TotalWater.ToString("0.######") mL</td></tr>
-                            <tr><th scope="row">CO₂ (estimate)</th><td>@saved.TotalCo2.ToString("0.######") g</td></tr>
-                            <tr><th scope="row">Energy (estimate)</th><td>@saved.TotalEnergy.ToString("0.######") Wh</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            @if (!string.IsNullOrEmpty(saveMessage))
-            {
-                <p class="mb-0" role="status">@saveMessage</p>
-            }
+                <form class="d-flex flex-column gap-3 pt-3 border-top" @onsubmit="SendAsync" @onsubmit:preventDefault>
+                    <div class="d-flex flex-wrap align-items-end gap-3">
+                        <div>
+                            <label class="form-label" for="model">Model</label>
+                            <select id="model" class="form-select" @bind="selectedModel" disabled="@sending">
+                                @foreach (var model in Gemini.AvailableModels)
+                                {
+                                    <option value="@model">@model</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="prompt">Your prompt</label>
+                        <textarea id="prompt" class="form-control" rows="4" placeholder="Ask anything…"
+                                  maxlength="@Gemini.MaxPromptCharacters"
+                                  @bind="prompt" @bind:event="oninput" disabled="@sending"></textarea>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <span class="ox-note">Shorter prompts use fewer tokens · @prompt.Length.ToString("#,0") / @Gemini.MaxPromptCharacters.ToString("#,0") characters</span>
+                        <button class="btn btn-primary btn-lg" type="submit"
+                                disabled="@(sending || string.IsNullOrWhiteSpace(prompt) || !Gemini.IsConfigured)">
+                            @(sending ? "Waiting for Gemini…" : "Send to Gemini") <Icon Name="arrow" Size="18" Stroke="2.2" />
+                        </button>
+                    </div>
+                </form>
+            </section>
+
             <RecommendationList Items="recommendations" />
-        }
+        </div>
+
+        <aside class="ox-side d-flex flex-column gap-3" aria-label="Impact of this reply">
+            <section class="ox-dark-panel">
+                <h2>This reply</h2>
+                @if (reply is null)
+                {
+                    <p class="ox-note mb-0">Send a prompt to see how many tokens it used and its estimated water, CO₂ and energy.</p>
+                }
+                else
+                {
+                    <div>
+                        <div class="d-flex justify-content-between ox-note mb-2"><span>Tokens</span><span class="text-white fw-semibold">@reply.TotalTokens.ToString("#,0") total</span></div>
+                        <div class="ox-split-bar" role="img" aria-label="@($"Token split: {reply.PromptTokens} prompt, {reply.CandidateTokens} response, {ThinkingTokens} thinking")">
+                            <div style="width: @Share(reply.PromptTokens)%; background: #FFFFFF"></div>
+                            <div style="width: @Share(reply.CandidateTokens)%; background: #8FD3B6"></div>
+                            <div style="width: @Share(ThinkingTokens)%; background: #4E6B60"></div>
+                        </div>
+                        <div class="ox-legend">
+                            <span><i style="background: #FFFFFF"></i>Prompt @reply.PromptTokens.ToString("#,0")</span>
+                            <span><i style="background: #8FD3B6"></i>Response @reply.CandidateTokens.ToString("#,0")</span>
+                            <span><i style="background: #4E6B60"></i>Thinking @ThinkingTokens.ToString("#,0")</span>
+                        </div>
+                    </div>
+                    @if (saved is not null)
+                    {
+                        <dl class="ox-mini-metrics">
+                            <div><dt>Water</dt><dd>@saved.TotalWater.ToString("0.###")<small> mL</small></dd></div>
+                            <div><dt>CO₂</dt><dd>@saved.TotalCo2.ToString("0.###")<small> g</small></dd></div>
+                            <div><dt>Energy</dt><dd>@saved.TotalEnergy.ToString("0.###")<small> Wh</small></dd></div>
+                        </dl>
+                    }
+                    @if (ThinkingTokens > reply.CandidateTokens)
+                    {
+                        <p class="ox-note mb-0">Most of this reply's tokens were Gemini's hidden "thinking", not the answer itself.</p>
+                    }
+                }
+            </section>
+
+            <section class="ox-panel d-flex flex-column gap-2">
+                <h2 class="h5 m-0">How we estimate</h2>
+                <p class="small mb-0" style="color: var(--ox-ink-2)">
+                    Google's published figures for a median Gemini Apps text prompt (May 2025) are
+                    @TokenImpactEstimator.ReferenceEnergyWh Wh, @TokenImpactEstimator.ReferenceCo2Grams g CO₂e and
+                    @TokenImpactEstimator.ReferenceWaterMl mL water. We assume that prompt is
+                    @TokenImpactEstimator.ReferenceTokenCount tokens and scale the energy by your token count.
+                    Carbon and water follow from that energy with Google's method: CO₂e = energy × 94 g/kWh + embodied 0.010 g;
+                    water = (energy − data-centre overhead, PUE 1.09) × 1.15 L/kWh.
+                </p>
+                <div class="ox-formula">energy = @TokenImpactEstimator.ReferenceEnergyWh Wh × tokens ÷ @TokenImpactEstimator.ReferenceTokenCount</div>
+                <p class="ox-note mb-0">Every Gemini model gets the same factor. Rough estimates, not measurements. Source: Google, arXiv:2508.15734.</p>
+            </section>
+
+            <a class="ox-link-card" href="">
+                <span>
+                    <span class="d-block ox-note">Your totals</span>
+                    <span class="fw-semibold">@TotalsText</span>
+                </span>
+                <Icon Name="chevron" Size="20" Color="#0E6B4F" Stroke="2.2" />
+            </a>
+        </aside>
     </div>
 </div>
 
-<div class="alert alert-info small">
-    <strong>How the estimate works.</strong>
-    Google published estimates for the median Gemini Apps text prompt (May 2025):
-    @TokenImpactEstimator.ReferenceEnergyWh Wh energy, @TokenImpactEstimator.ReferenceCo2Grams g CO₂e and
-    @TokenImpactEstimator.ReferenceWaterMl mL water. Google did not publish the token count of that prompt,
-    so this app assumes @TokenImpactEstimator.ReferenceTokenCount tokens and scales the energy linearly with the
-    total tokens. Carbon and water are then derived from that energy with Google's method:
-    CO₂e = energy × 94 g/kWh (market-based grid factor) + embodied 0.010 g, and
-    water = (energy − data-center overhead, PUE 1.09) × 1.15 L/kWh.
-    Google's figures describe Gemini Apps text prompts only, and every Gemini model is given the same factor here.
-    These are rough estimates, not measurements. Source: Google, arXiv:2508.15734.
-</div>
-
-<h2 class="h5">Your totals</h2>
-<UsageSummaryCard Summary="summary" />
-
-<RecentUsageTable Records="records" />
-
 @code {
+    private const string SavedText = "Saved to your usage history.";
+
     private string? userId;
     private string selectedModel = string.Empty;
     private string prompt = string.Empty;
+    private string? lastPrompt;
     private bool sending;
     private string? error;
     private string? saveMessage;
     private GeminiReply? reply;
     private UsageRecord? saved;
     private IReadOnlyList<RecommendationEngine> recommendations = [];
-    private List<UsageRecord> records = [];
     private UsageSummary? summary;
+
+    private int ThinkingTokens => reply is null ? 0 : Math.Max(0, reply.TotalTokens - reply.PromptTokens - reply.CandidateTokens);
+
+    private double Share(int tokens) => reply is null || reply.TotalTokens <= 0 ? 0 : tokens * 100.0 / reply.TotalTokens;
+
+    private string TotalsText
+    {
+        get
+        {
+            if (summary is null || summary.TotalQueries == 0) return "Nothing recorded yet";
+            var (water, co2, energy) = summary.Report.GetRunningTotals();
+            return $"{summary.TotalQueries:#,0} queries · {water:0.#} mL · {co2:0.#} g · {energy:0.#} Wh";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,7 +209,6 @@
 
     private async Task LoadAsync()
     {
-        records = await UsageTrackingService.GetRecentAsync(userId!);
         summary = await UsageTrackingService.GetSummaryAsync(userId!);
     }
 
@@ -148,9 +238,11 @@
             return;
         }
 
+        lastPrompt = prompt;
         try
         {
             reply = await Gemini.GenerateAsync(prompt, selectedModel);
+            prompt = string.Empty;
         }
         catch (GeminiException ex)
         {
@@ -169,7 +261,7 @@
             var result = await UsageTrackingService.RecordAsync(userId, queryCount: 1, factor);
             saved = result.Record;
             recommendations = result.Recommendations;
-            saveMessage = "Saved to your usage history.";
+            saveMessage = SavedText;
             await LoadAsync();
         }
         catch (ArgumentException ex)

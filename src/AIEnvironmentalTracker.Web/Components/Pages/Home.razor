@@ -6,54 +6,143 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UsageTrackingService UsageTrackingService
 
-<PageTitle>OxyGenAI Usage Tracker</PageTitle>
+<PageTitle>Usage tracker – OxyGenAI</PageTitle>
 
-<h1>OxyGenAI Usage Tracker</h1>
-<p>Record AI usage and estimate its environmental impact using factors you provide.</p>
-
-<h2 class="h5">Your totals</h2>
-<UsageSummaryCard Summary="summary" />
-
-<div class="card mb-4">
-    <div class="card-body">
-        <h2 class="h5">New usage record</h2>
-        <p class="text-muted">Enter the impact per query for the model you used. These values are your estimates.</p>
-        <form @onsubmit="SaveAsync" @onsubmit:preventDefault>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label" for="model">AI model or application</label>
-                    <input id="model" class="form-control" @bind="modelName" maxlength="120" required />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="queries">Number of queries</label>
-                    <input id="queries" class="form-control" type="number" min="1" @bind="queryCount" required />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="water">Water per query (mL)</label>
-                    <input id="water" class="form-control" type="number" min="0" step="any" @bind="waterPerQuery" required />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="co2">CO₂ per query (g)</label>
-                    <input id="co2" class="form-control" type="number" min="0" step="any" @bind="co2PerQuery" required />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="energy">Energy per query (Wh)</label>
-                    <input id="energy" class="form-control" type="number" min="0" step="any" @bind="energyPerQuery" required />
-                </div>
-            </div>
-            <button class="btn btn-primary mt-3" type="submit" disabled="@saving">Save usage</button>
-        </form>
-        @if (!string.IsNullOrEmpty(message))
-        {
-            <p class="mt-3 mb-0" role="status">@message</p>
-        }
-        <RecommendationList Items="recommendations" />
+<div class="ox-page">
+    <div class="ox-title-row">
+        <div>
+            <p class="ox-eyebrow">Your footprint</p>
+            <h1>The impact of your AI use</h1>
+            <p class="ox-lede">@Lede</p>
+        </div>
+        <div class="ox-actions">
+            <a class="btn btn-outline-secondary" href="ask-gemini"><Icon Name="chat" Size="18" /> Ask Gemini</a>
+            <a class="btn btn-primary" href="#record"><Icon Name="plus" Size="18" Stroke="2.2" /> Record usage</a>
+        </div>
     </div>
+
+    <UsageSummaryCard Summary="summary" ModelCount="models.Count" />
+
+    <div class="ox-split">
+        <section id="record" class="ox-panel ox-side" aria-labelledby="record-title">
+            <h2 id="record-title">Record usage</h2>
+            <p class="ox-note mt-1 mb-3">Enter your own estimate of the impact per query.</p>
+
+            <form class="d-flex flex-column gap-3" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+                <div>
+                    <label class="form-label" for="model">AI model or app</label>
+                    <input id="model" class="form-control" @bind="modelName" @bind:event="oninput" maxlength="120" required />
+                    <div class="ox-chips" role="group" aria-label="Quick picks">
+                        @foreach (var pick in QuickPicks)
+                        {
+                            <button type="button" class="ox-chip" aria-pressed="@(string.Equals(modelName, pick, StringComparison.OrdinalIgnoreCase) ? "true" : "false")"
+                                    @onclick="() => modelName = pick">@pick</button>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label" for="queries">Number of queries</label>
+                    <input id="queries" class="form-control" type="number" min="1" @bind="queryCount" @bind:event="oninput" required />
+                </div>
+
+                <fieldset class="m-0 p-0 border-0">
+                    <legend class="form-label mb-2">Impact per query</legend>
+                    <div class="ox-field-row">
+                        <div>
+                            <label for="water">Water</label>
+                            <div class="ox-unit-field">
+                                <input id="water" type="number" min="0" step="any" @bind="waterPerQuery" @bind:event="oninput" required />
+                                <span>mL</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="co2">CO₂</label>
+                            <div class="ox-unit-field">
+                                <input id="co2" type="number" min="0" step="any" @bind="co2PerQuery" @bind:event="oninput" required />
+                                <span>g</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="energy">Energy</label>
+                            <div class="ox-unit-field">
+                                <input id="energy" type="number" min="0" step="any" @bind="energyPerQuery" @bind:event="oninput" required />
+                                <span>Wh</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="ox-note mt-2 mb-0">
+                        Not sure? Google's figures for a median Gemini prompt are
+                        @TokenImpactEstimator.ReferenceWaterMl mL, @TokenImpactEstimator.ReferenceCo2Grams g and @TokenImpactEstimator.ReferenceEnergyWh Wh.
+                        <button type="button" class="btn btn-link p-0 align-baseline fw-semibold" style="min-height: 0" @onclick="UseGoogleFigures">Use them</button>
+                    </p>
+                </fieldset>
+
+                <div class="ox-preview" aria-live="polite">
+                    <span>This record</span>
+                    <strong>@PreviewText</strong>
+                </div>
+
+                <button class="btn btn-primary btn-lg" type="submit" disabled="@saving">
+                    @(saving ? "Saving…" : "Save usage")
+                </button>
+
+                @if (!string.IsNullOrEmpty(message))
+                {
+                    <p class="ox-status @(messageIsError ? "ox-status-error" : "")" role="status">@message</p>
+                }
+            </form>
+        </section>
+
+        <div class="ox-main">
+            <section class="ox-panel" aria-labelledby="model-title">
+                <div class="ox-panel-head">
+                    <h2 id="model-title">Water by model</h2>
+                    <span class="ox-note">mL, last 12 months</span>
+                </div>
+                @if (models.Count == 0)
+                {
+                    <p class="ox-empty mb-0">Record some usage to see which models use the most water.</p>
+                }
+                else
+                {
+                    <div class="ox-bars">
+                        @foreach (var model in models.OrderByDescending(m => m.Water).Take(6))
+                        {
+                            <div>
+                                <div class="ox-bar-label">
+                                    <span class="fw-semibold">@model.ModelName</span>
+                                    <span class="text-muted">@model.Water.ToString("0.##") mL · @model.Queries queries</span>
+                                </div>
+                                <div class="ox-bar-track" role="img" aria-label="@($"{model.ModelName}: {model.Water:0.##} mL")">
+                                    <div class="ox-bar-fill" style="width: @BarWidth(model.Water)%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            @if (recommendations.Count > 0)
+            {
+                <RecommendationList Items="recommendations" Context="@recommendationContext" />
+            }
+            else
+            {
+                <section class="ox-panel" aria-labelledby="tips-title">
+                    <h2 id="tips-title">Recommendations</h2>
+                    <p class="ox-empty mt-3 mb-0">Save a record to get advice on using AI more lightly.</p>
+                </section>
+            }
+        </div>
+    </div>
+
+    <RecentUsageTable Records="records" />
 </div>
 
-<RecentUsageTable Records="records" />
-
 @code {
+    private static readonly string[] QuickPicks = ["ChatGPT", "Gemini", "Claude", "Copilot"];
+
     private string? userId;
     private string modelName = string.Empty;
     private int queryCount = 1;
@@ -62,9 +151,25 @@
     private decimal energyPerQuery;
     private bool saving;
     private string? message;
+    private bool messageIsError;
+    private string? recommendationContext;
     private List<UsageRecord> records = [];
     private UsageSummary? summary;
+    private IReadOnlyList<ModelBreakdown> models = [];
     private IReadOnlyList<RecommendationEngine> recommendations = [];
+
+    private string Lede => summary is { TotalQueries: > 0 } s
+        ? $"Estimated from {s.TotalQueries:#,0} queries you have recorded."
+        : "Record your AI use to see its estimated water, CO₂ and energy.";
+
+    private string PreviewText
+    {
+        get
+        {
+            var n = Math.Max(queryCount, 0);
+            return $"{waterPerQuery * n:0.###} mL · {co2PerQuery * n:0.###} g · {energyPerQuery * n:0.###} Wh";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,6 +183,20 @@
     {
         records = await UsageTrackingService.GetRecentAsync(userId!);
         summary = await UsageTrackingService.GetSummaryAsync(userId!);
+        models = (await UsageTrackingService.GetTrendAsync(userId!, TrendPeriod.Monthly)).Models;
+    }
+
+    private void UseGoogleFigures()
+    {
+        waterPerQuery = TokenImpactEstimator.ReferenceWaterMl;
+        co2PerQuery = TokenImpactEstimator.ReferenceCo2Grams;
+        energyPerQuery = TokenImpactEstimator.ReferenceEnergyWh;
+    }
+
+    private double BarWidth(decimal water)
+    {
+        var max = models.Max(m => m.Water);
+        return max <= 0 ? 0 : Math.Max(2, (double)(water / max * 100));
     }
 
     private async Task SaveAsync()
@@ -85,22 +204,26 @@
         if (userId is null || saving) return;
         saving = true;
         message = null;
+        messageIsError = false;
         recommendations = [];
         try
         {
             var result = await UsageTrackingService.RecordAsync(userId, modelName, queryCount,
                 waterPerQuery, co2PerQuery, energyPerQuery);
             recommendations = result.Recommendations;
+            recommendationContext = $"Based on your last record: {result.Record.AiModelName}, {result.Record.QueryCount} quer{(result.Record.QueryCount == 1 ? "y" : "ies")}.";
             await LoadAsync();
             message = "Usage recorded in PostgreSQL.";
         }
         catch (ArgumentException ex)
         {
             message = UserMessages.From(ex);
+            messageIsError = true;
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateException)
         {
             message = "Could not save the usage record. Please check the database connection.";
+            messageIsError = true;
         }
         finally
         {

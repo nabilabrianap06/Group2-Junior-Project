@@ -1,39 +1,57 @@
-@* Totals for the signed-in user, read from a CarbonFootprintReport. *@
+@* Totals for the signed-in user, read from a CarbonFootprintReport, as four metric tiles. *@
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body">
-            <div class="text-muted small">Total queries</div>
-            <div class="fs-4 fw-semibold">@(Summary?.TotalQueries ?? 0)</div>
-        </div></div>
+<section class="ox-tiles" aria-label="Your totals">
+    <div class="ox-tile ox-tile-dark">
+        <div class="ox-tile-top"><span>Queries</span><Icon Name="queries" Size="22" Color="#8FD3B6" /></div>
+        <div class="ox-tile-value">@queries.ToString("#,0")</div>
+        <div class="ox-tile-sub">@QueriesNote</div>
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body">
-            <div class="text-muted small">Water</div>
-            <div class="fs-4 fw-semibold">@Format(totals.Water) <span class="fs-6">mL</span></div>
-        </div></div>
+    <div class="ox-tile">
+        <div class="ox-tile-top"><span>Water</span><Icon Name="water" Size="22" Color="#1D5FA8" /></div>
+        <div class="ox-tile-value ox-water">@Format(totals.Water)<small>mL</small></div>
+        <div class="ox-tile-sub">@PerQuery(totals.Water, "mL")</div>
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body">
-            <div class="text-muted small">CO₂</div>
-            <div class="fs-4 fw-semibold">@Format(totals.CO2) <span class="fs-6">g</span></div>
-        </div></div>
+    <div class="ox-tile">
+        <div class="ox-tile-top"><span>CO₂</span><Icon Name="co2" Size="22" Color="#3F4A45" /></div>
+        <div class="ox-tile-value">@Format(totals.CO2)<small>g</small></div>
+        <div class="ox-tile-sub">@PerQuery(totals.CO2, "g")</div>
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body">
-            <div class="text-muted small">Energy</div>
-            <div class="fs-4 fw-semibold">@Format(totals.Energy) <span class="fs-6">Wh</span></div>
-        </div></div>
+    <div class="ox-tile">
+        <div class="ox-tile-top"><span>Energy</span><Icon Name="energy" Size="22" Color="#A84B05" /></div>
+        <div class="ox-tile-value ox-energy">@Format(totals.Energy)<small>Wh</small></div>
+        <div class="ox-tile-sub">@PerQuery(totals.Energy, "Wh")</div>
     </div>
-</div>
+</section>
 
 @code {
     [Parameter] public UsageSummary? Summary { get; set; }
 
+    /// <summary>Optional: number of different models, shown under the query count.</summary>
+    [Parameter] public int? ModelCount { get; set; }
+
     private (decimal Water, decimal CO2, decimal Energy) totals;
+    private int queries;
 
     protected override void OnParametersSet()
-        => totals = Summary?.Report.GetRunningTotals() ?? (0m, 0m, 0m);
+    {
+        totals = Summary?.Report.GetRunningTotals() ?? (0m, 0m, 0m);
+        queries = Summary?.TotalQueries ?? 0;
+    }
 
-    private static string Format(decimal value) => value.ToString("#,0.####");
+    private string QueriesNote => ModelCount switch
+    {
+        null or 0 => queries == 0 ? "nothing recorded yet" : "recorded so far",
+        1 => "with 1 model",
+        var n => $"across {n} models"
+    };
+
+    private string PerQuery(decimal total, string unit) =>
+        queries == 0 ? "per query: –" : $"{Format(total / queries)} {unit} per query";
+
+    private static string Format(decimal value) => value switch
+    {
+        >= 100 => value.ToString("#,0"),
+        >= 1 => value.ToString("#,0.#"),
+        _ => value.ToString("0.###")
+    };
 }
