@@ -91,7 +91,7 @@ Neon setup (2026-11-27): the new `setup.ps1` passed 10 input checks (Neon format
 | 13 | **Neon free database sleeps when idle.** | The first request after a pause can take seconds. | Warn testers; retry once. |
 | 15 | **Every installed copy holds the database password** (`oxygenai.settings.json`), and all copies share one database. | Anyone with the file can read or change all data. | Give the connection string only to trusted people; reset the password in Neon if it leaks; never put it in the zip or the repository. |
 | 16 | **No internet, no app.** The database is in the cloud. | The app cannot start offline. | Check the connection before a demo. |
-| 17 | **"Forgot password?" is shown on the log-in page** but the app sends no email. | Users reach a dead end. | Remove the link (to-do 3.2). |
+| 17 | **"Forgot password?" is shown on the log-in page** but the app sends no email. | Users reach a dead end. | Remove the link (to-do No. 8). |
 | 14 | **Secrets.** Connection strings and API keys live in user-secrets, environment variables or `oxygenai.settings.json` (git-ignored). | A key pasted into chat or committed is compromised. | Never paste or commit keys; rotate any key that was exposed. |
 
 ---
