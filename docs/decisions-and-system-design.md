@@ -192,7 +192,7 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 - **Consequences:** results apply to Gemini text prompts only.
 
 ### ADR-007 – Deliver as a Windows app by hosting the web app in a WinForms shell
-- **Status:** accepted and implemented (`src/AIEnvironmentalTracker.Desktop`). The lecturer has not been asked yet; the choice follows the stated requirement (C# basis, Windows application output, Blazor allowed).
+- **Status:** accepted, implemented (`src/AIEnvironmentalTracker.Desktop`) and settled as the form of the deliverable (2026-11-27).
 - **Context:** the requirement is a C# codebase with a Windows application as output; Blazor is allowed. Today the package is a console program that opens the default browser.
 - **Options:** (A) keep the current package; (B) a WinForms or WPF window hosting the app in WebView2; (C) .NET MAUI Blazor Hybrid.
 - **Decision:** B, because it reuses all Blazor code and gives a real window. C needs a larger rewrite of authentication and hosting.
@@ -233,7 +233,7 @@ Secrets are never committed. `oxygenai.settings.json` is git-ignored.
 
 ## 8. Open questions
 
-1. Confirm with the lecturer that a WinForms window hosting the Blazor app (WebView2) meets "C# basis, Windows application output".
+1. How does the lecturer's PC get the Neon connection string and Gemini key for the submitted `.exe`?
 2. Re-test the Gemini models that returned 503 and offer them when stable.
 3. Is there a published or measured per-model energy source we can cite (needed before claiming differences per token)?
 4. Keep or remove the design-only Domain user classes (`User`, `Admin`, `RegisteredUser`)? They are part of the UML and the worksheets, so they are kept for now.

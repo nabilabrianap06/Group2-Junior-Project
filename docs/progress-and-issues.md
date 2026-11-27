@@ -76,7 +76,7 @@ Neon setup (2026-11-27): the new `setup.ps1` passed 10 input checks (Neon format
 
 | # | Issue | Impact | Suggested action |
 | :-- | :--- | :--- | :--- |
-| 1 | ~~Windows-app requirement only partly met (browser only).~~ | Resolved by the WinForms + WebView2 shell (ADR-007). Remaining: the lecturer has not confirmed that this meets the requirement; WebView2 Runtime is needed (included in Windows 11). | Ask the lecturer once. |
+| 1 | ~~Windows-app requirement only partly met (browser only).~~ | Resolved by the WinForms + WebView2 shell (ADR-007), settled on 2026-11-27. The WebView2 Runtime is needed (included in Windows 11). | – |
 | 2 | **Gemini free quota is shared by all users.** The default is now `gemini-3.5-flash-lite` (15 requests/min, 500/day per project in AI Studio); `gemini-3.6-flash` allows only 20/day. Google also answers HTTP 503 when busy: `gemini-3.1-flash-lite`, `gemini-3.8-flash` and `gemini-4-hydrogen` returned 503 and `gemini-2.5-flash-lite` returned 404 in the test on 2026-11-25, so they are not offered. | Many testers can exhaust the project quota; a model can be unavailable at any time. | Per-user allowance is in place (`AskLimits`). Re-test the 503 models later and add them to `Gemini:AllowedModels`. |
 | 3 | ~~`gemini-2.5-flash` is deprecated (routed to `gemini-3.5-flash-lite` from 2026-12-01).~~ | Resolved: the default model is set explicitly to `gemini-3.5-flash-lite`. | – |
 | 4 | **Free-tier prompts may be used by Google to improve its products.** | Privacy for testers. | Tell testers not to enter sensitive text. |
@@ -91,14 +91,14 @@ Neon setup (2026-11-27): the new `setup.ps1` passed 10 input checks (Neon format
 | 13 | **Neon free database sleeps when idle.** | The first request after a pause can take seconds. | Warn testers; retry once. |
 | 15 | **Every installed copy holds the database password** (`oxygenai.settings.json`), and all copies share one database. | Anyone with the file can read or change all data. | Give the connection string only to trusted people; reset the password in Neon if it leaks; never put it in the zip or the repository. |
 | 16 | **No internet, no app.** The database is in the cloud. | The app cannot start offline. | Check the connection before a demo. |
-| 17 | **"Forgot password?" is shown on the log-in page** but the app sends no email. | Users reach a dead end. | Remove the link (to-do No. 8). |
+| 17 | **"Forgot password?" is shown on the log-in page** but the app sends no email. | Users reach a dead end. | Remove the link (to-do No. 9). |
 | 14 | **Secrets.** Connection strings and API keys live in user-secrets, environment variables or `oxygenai.settings.json` (git-ignored). | A key pasted into chat or committed is compromised. | Never paste or commit keys; rotate any key that was exposed. |
 
 ---
 
 ## 5. Suggested next steps (priority order)
 
-1. Confirm the Windows-app approach with the lecturer (issue 1).
+1. Prepare the final submission due 2026-11-30 23:59: PPT, demo video (3 minutes) and `.exe` in one zip (see `docs/todo.md`).
 2. Run Black-box test 23 (a successful Gemini reply) when a real API key is available.
 3. Re-test the Gemini models that answered 503 and add the stable ones to `Gemini:AllowedModels` (issue 2).
 4. Click through the window by hand, together with the other pages still waiting for a UI check (see "Waiting for a UI check" below).
